@@ -110,12 +110,7 @@ input[type=range]{flex:1;accent-color:#58CC02;}
       </div>
     </div>
     <button class="gen-btn" id="gen-btn" onclick="generatePosition()" disabled>⏳ Stockfish lädt…</button>
-    <div class="key-row">
-      <input type="password" id="api-key" placeholder="sk-ant-… (optional)"
-             oninput="onApiKeyInput(this.value)"/>
-      <span id="key-ok" style="font-size:16px;min-width:18px;color:#58CC02;"></span>
-    </div>
-    <div class="key-hint">Optional: Key im Browser speichern oder auf Vercel als `ANTHROPIC_API_KEY` setzen. <a href="https://console.anthropic.com/" target="_blank">Key holen →</a></div>
+    <div class="key-hint">KI-Erklärungen laufen serverseitig über `ANTHROPIC_API_KEY` (Vercel / lokale Env). <a href="https://console.anthropic.com/" target="_blank">Key holen →</a></div>
   </div>
 
   <div class="pbar">
@@ -450,32 +445,7 @@ function setPawns(n) {
   numPawns = n;
   document.querySelectorAll('.pb').forEach(function(b, i) { b.classList.toggle('active', i === n - 1); });
 }
-function getApiKey() { return (document.getElementById('api-key').value || '').trim(); }
-function getSavedApiKey() {
-  try { return localStorage.getItem('anthropic_api_key') || ''; } catch (e) { return ''; }
-}
-function setSavedApiKey(value) {
-  try {
-    if (value) localStorage.setItem('anthropic_api_key', value);
-    else localStorage.removeItem('anthropic_api_key');
-  } catch (e) {}
-}
-function updateKeyIndicator(value) {
-  document.getElementById('key-ok').textContent = value && value.indexOf('sk-ant-') === 0 ? '✓' : '';
-}
-function onApiKeyInput(value) {
-  var clean = (value || '').trim();
-  setSavedApiKey(clean);
-  updateKeyIndicator(clean);
-}
-function initApiKeyInput() {
-  var input = document.getElementById('api-key');
-  if (!input) return;
-  var saved = getSavedApiKey();
-  if (!saved) return;
-  input.value = saved;
-  updateKeyIndicator(saved);
-}
+// API-Key wird NUR serverseitig genutzt (Vercel Env: ANTHROPIC_API_KEY)
 
 // ── POSITION GENERATOR ────────────────────────────────
 var generating = false;
@@ -848,8 +818,6 @@ function loadExplanation() {
   if (!lastMoveContext) return;
   var btn = document.getElementById('explain-btn');
   var box = document.getElementById('explain-box');
-  var apiKey = getApiKey();
-
   btn.disabled = true;
   btn.innerHTML = '<div class="thdots"><div class="dp"></div><div class="dp"></div><div class="dp"></div></div>';
   box.className = 'explain-box';
@@ -895,7 +863,7 @@ function loadExplanation() {
     },
     body: JSON.stringify({
       content: content,
-      apiKey: apiKey || null
+      apiKey: null
     })
   }).then(function(r) {
     if (!r.ok) return r.json().then(function(err) { throw new Error(err.error || 'API-Fehler'); });
@@ -1130,7 +1098,6 @@ function toggleWarnings(){
 
 // ── INIT ──────────────────────────────────────────────
 updSkill(4);
-initApiKeyInput();
 initStockfish();
 </script>
 </body>
