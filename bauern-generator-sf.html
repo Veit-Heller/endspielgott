@@ -1,0 +1,1137 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bauernendspiel-Generator</title>
+<script src="chess.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&display=swap');
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Nunito',sans-serif;background:#f0f4f8;display:flex;justify-content:center;padding:20px 8px 40px;}
+#app{display:flex;flex-direction:column;align-items:center;gap:12px;width:100%;max-width:460px;}
+h1{font-size:22px;font-weight:900;color:#3d3d3a;}
+h1 span{color:#58CC02;}
+.setup{width:100%;background:#fff;border:1px solid #e8e6de;border-radius:16px;padding:16px 18px;box-shadow:0 1px 4px rgba(0,0,0,.06);display:flex;flex-direction:column;gap:10px;}
+.setup-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.setup-lbl{font-size:13px;font-weight:800;color:#3d3d3a;white-space:nowrap;min-width:130px;}
+.pawn-btns{display:flex;gap:6px;}
+.pb{width:36px;height:36px;border-radius:10px;font-family:'Nunito',sans-serif;font-weight:900;font-size:14px;border:2px solid #e0ddd6;background:#fff;color:#888;cursor:pointer;transition:all .15s;}
+.pb:hover{border-color:#58CC02;color:#58CC02;}
+.pb.active{background:#58CC02;color:#fff;border-color:#58CC02;}
+.gen-btn{width:100%;padding:12px;border-radius:13px;font-family:'Nunito',sans-serif;font-weight:900;font-size:15px;border:none;cursor:pointer;background:#58CC02;color:#fff;box-shadow:0 4px 0 #3d9900;transition:transform .1s;}
+.gen-btn:active{transform:translateY(3px);box-shadow:0 1px 0 #3d9900;}
+.gen-btn:disabled{background:#ccc;box-shadow:0 4px 0 #aaa;cursor:not-allowed;}
+.key-row{display:flex;align-items:center;gap:8px;}
+.key-row input{flex:1;padding:8px 12px;border-radius:10px;border:2px solid #e0ddd6;font-family:'Nunito',sans-serif;font-size:12px;font-weight:700;color:#3d3d3a;outline:none;}
+.key-row input:focus{border-color:#58CC02;}
+.key-hint{font-size:11px;font-weight:700;color:#bbb;}
+.key-hint a{color:#1CB0F6;text-decoration:none;}
+.pbar{width:100%;display:flex;align-items:center;gap:9px;padding:7px 13px;background:#fff;border:1px solid #e8e6de;border-radius:13px;box-shadow:0 1px 4px rgba(0,0,0,.06);}
+.av{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:12px;flex-shrink:0;}
+.av-o{background:#FFD900;color:#5a3e00;}.av-y{background:#DDF4C8;color:#2D7A0A;}
+.pname{font-weight:800;font-size:14px;color:#3d3d3a;flex:1;}
+.badge{font-size:11px;font-weight:700;color:#888;background:#f5f4ef;padding:2px 9px;border-radius:20px;}
+.engbadge{font-size:10px;font-weight:800;padding:2px 9px;border-radius:10px;}
+.engbadge.loading{background:#fff3cd;color:#856404;}
+.engbadge.ready{background:#d4edda;color:#155724;}
+.engbadge.error{background:#f8d7da;color:#721c24;}
+.mctr{font-size:12px;font-weight:700;color:#aaa;}
+.board-outer{border-radius:14px;overflow:hidden;box-shadow:0 10px 36px rgba(0,0,0,.22);border:4px solid #6B3F1A;}
+.board-frame{background:linear-gradient(145deg,#9B6B3C,#7A4E24);padding:18px;}
+.frow{display:flex;justify-content:space-around;padding-bottom:3px;}
+.fl,.rl{font-size:9px;font-weight:900;color:rgba(255,255,255,.45);}
+.fl{width:46px;text-align:center;}
+.bmid{display:flex;}
+.rnks{display:flex;flex-direction:column;justify-content:space-around;width:13px;}
+.rl{height:46px;display:flex;align-items:center;justify-content:center;}
+#board{display:grid;grid-template-columns:repeat(8,46px);grid-template-rows:repeat(8,46px);border-radius:3px;overflow:hidden;}
+.sq{width:46px;height:46px;display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative;transition:filter .1s;}
+.sq:hover{filter:brightness(1.08);}
+.lt{background:#F0D9B5;}.dk{background:#B58863;}
+.sel.lt{background:#829769;}.sel.dk{background:#646f40;}
+.hl.lt{background:#cdd16f;}.hl.dk{background:#aaa23a;}
+.lm.lt{background:#d4e087;}.lm.dk{background:#9aaa3e;}
+.dot{position:absolute;width:14px;height:14px;border-radius:50%;background:rgba(0,0,0,.17);pointer-events:none;z-index:2;}
+.cring{position:absolute;width:42px;height:42px;border-radius:50%;border:3px solid rgba(0,0,0,.22);pointer-events:none;z-index:2;}
+.evalrow{width:100%;display:flex;align-items:center;gap:8px;}
+.evalbg{flex:1;height:8px;border-radius:4px;background:#e0ddd6;overflow:hidden;}
+.evalfill{height:100%;border-radius:4px;transition:width .6s;}
+.evalfill.pos{background:#58CC02;}.evalfill.neg{background:#FF4B4B;}
+.evallbl{font-size:11px;font-weight:800;min-width:52px;text-align:right;}
+.evallbl.pos{color:#3d9900;}.evallbl.neg{color:#cc2200;}.evallbl.eq{color:#888;}
+/* ── Move rating card ── */
+.move-card{width:100%;background:#fff;border:1px solid #e8e6de;border-radius:14px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.06);}
+.move-card-top{display:flex;align-items:center;gap:0;padding:0;}
+.move-info{flex:1;padding:10px 12px;}
+.rating-label{font-size:13px;font-weight:900;letter-spacing:.02em;}
+.rating-label.great{color:#3d9900;} .rating-label.good{color:#0a85c2;}
+.rating-label.ok{color:#9a6400;} .rating-label.bad{color:#c0392b;} .rating-label.blunder{color:#c0392b;} .rating-label.idle{color:#aaa;}
+.cp-row{display:flex;align-items:center;gap:10px;margin-top:4px;flex-wrap:wrap;}
+.cp-pill{display:flex;align-items:center;gap:4px;font-size:11px;font-weight:800;padding:2px 8px;border-radius:20px;background:#f5f4ef;}
+.cp-pill .cp-label{color:#aaa;font-weight:700;}
+.cp-pill .cp-val{color:#3d3d3a;}
+.cp-pill .cp-val.pos{color:#3d9900;} .cp-pill .cp-val.neg{color:#c0392b;}
+.cp-arrow{font-size:14px;color:#ccc;}
+.explain-btn{margin:0 10px 10px;width:calc(100% - 20px);padding:8px;border-radius:10px;font-family:'Nunito',sans-serif;font-weight:800;font-size:12px;border:1.5px solid #e0ddd6;background:#f9f8f4;color:#888;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:all .15s;}
+.explain-btn:hover{border-color:#1CB0F6;color:#1CB0F6;background:#f0faff;}
+.explain-btn:disabled{opacity:.5;cursor:not-allowed;}
+.explain-box{margin:0 10px 10px;padding:10px 12px;border-radius:10px;background:#f5f4ef;font-size:13px;font-weight:700;color:#3d3d3a;line-height:1.5;display:none;}
+.explain-box.visible{display:block;}
+.thdots{display:flex;gap:5px;align-items:center;padding:2px 0;}
+.dp{width:7px;height:7px;border-radius:50%;background:#bbb;animation:pulse 1.2s ease-in-out infinite;}
+.dp:nth-child(2){animation-delay:.2s;}.dp:nth-child(3){animation-delay:.4s;}
+@keyframes pulse{0%,80%,100%{opacity:.3;transform:scale(.8);}40%{opacity:1;transform:scale(1.1);}}
+.btnrow{display:flex;gap:9px;width:100%;}
+.btn{flex:1;padding:10px;border-radius:12px;font-family:'Nunito',sans-serif;font-weight:800;font-size:13px;border:none;cursor:pointer;transition:transform .1s;}
+.btn:active{transform:scale(.96);}
+.btnp{background:#58CC02;color:#fff;box-shadow:0 4px 0 #3d9900;}
+.btnp:active{box-shadow:0 1px 0 #3d9900;transform:translateY(3px);}
+.btns{background:#fff;border:2px solid #e0ddd6;color:#888;}
+.ctrow{width:100%;display:flex;align-items:center;gap:10px;}
+.ctlbl{font-size:12px;font-weight:700;color:#888;white-space:nowrap;}
+input[type=range]{flex:1;accent-color:#58CC02;}
+.ctval{font-size:12px;font-weight:800;color:#3d3d3a;min-width:58px;}
+</style>
+</head>
+<body>
+<div id="app">
+  <h1>♟ Bauern<span>endspiel</span></h1>
+
+  <div class="setup">
+    <div class="setup-row">
+      <span class="setup-lbl">Bauern pro Seite:</span>
+      <div class="pawn-btns">
+        <button class="pb" onclick="setPawns(1)">1</button>
+        <button class="pb active" onclick="setPawns(2)">2</button>
+        <button class="pb" onclick="setPawns(3)">3</button>
+        <button class="pb" onclick="setPawns(4)">4</button>
+        <button class="pb" onclick="setPawns(5)">5</button>
+      </div>
+    </div>
+    <button class="gen-btn" id="gen-btn" onclick="generatePosition()" disabled>⏳ Stockfish lädt…</button>
+    <div class="key-row">
+      <input type="password" id="api-key" placeholder="sk-ant-… (optional)"
+             oninput="onApiKeyInput(this.value)"/>
+      <span id="key-ok" style="font-size:16px;min-width:18px;color:#58CC02;"></span>
+    </div>
+    <div class="key-hint">Optional: Key im Browser speichern oder auf Vercel als `ANTHROPIC_API_KEY` setzen. <a href="https://console.anthropic.com/" target="_blank">Key holen →</a></div>
+  </div>
+
+  <div class="pbar">
+    <div class="av av-o">O</div>
+    <span class="pname">Tobold</span>
+    <span class="badge">Schwarz</span>
+    <span class="engbadge loading" id="engbadge">⏳ SF18…</span>
+    <span class="mctr" id="mctr">Zug 1</span>
+  </div>
+
+  <div class="board-outer">
+    <div class="board-frame">
+      <div class="frow"><span class="fl">a</span><span class="fl">b</span><span class="fl">c</span><span class="fl">d</span><span class="fl">e</span><span class="fl">f</span><span class="fl">g</span><span class="fl">h</span></div>
+      <div class="bmid">
+        <div class="rnks"><span class="rl">8</span><span class="rl">7</span><span class="rl">6</span><span class="rl">5</span><span class="rl">4</span><span class="rl">3</span><span class="rl">2</span><span class="rl">1</span></div>
+        <div id="board"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="evalrow">
+    <span style="font-size:11px;font-weight:700;color:#888">Schwarz ▲</span>
+    <div class="evalbg"><div class="evalfill pos" id="evalfill" style="width:50%"></div></div>
+    <span style="font-size:11px;font-weight:700;color:#888">▲ Weiß</span>
+    <span class="evallbl eq" id="evallbl">+0.00</span>
+  </div>
+
+  <div class="pbar">
+    <div class="av av-y">Du</div>
+    <span class="pname">Spieler</span>
+    <span class="badge">Weiß</span>
+  </div>
+
+  <div class="move-card" id="move-card">
+    <div class="move-card-top">
+      <div class="move-info" style="padding:10px 14px;">
+        <div class="rating-label idle" id="rating-label">Ziehe eine Figur</div>
+        <div class="cp-row" id="cp-row">
+          <span class="cp-pill"><span class="cp-label">Dein Zug</span>&nbsp;<span class="cp-val" id="cp-player-move" style="color:#3d3d3a;font-size:12px;">—</span>&nbsp;<span class="cp-val" id="cp-player">—</span></span>
+          <span class="cp-arrow">→</span>
+          <span class="cp-pill"><span class="cp-label">Bester Zug</span>&nbsp;<span class="cp-val" id="cp-best-move" style="color:#3d3d3a;font-size:12px;">—</span>&nbsp;<span class="cp-val" id="cp-best">—</span></span>
+        </div>
+      </div>
+    </div>
+    <button class="explain-btn" id="explain-btn" onclick="loadExplanation()" style="display:none">
+      🦉 Tobold erklärt warum
+    </button>
+    <div class="explain-box" id="explain-box"></div>
+  </div>
+
+  <div id="game-status" style="display:none;width:100%;padding:10px 14px;border-radius:12px;font-family:'Nunito',sans-serif;font-weight:800;font-size:14px;text-align:center;"></div>
+
+  <!-- Endgame situation panel -->
+  <div id="situation-panel" style="display:none;width:100%;background:#fff;border:1px solid #e8e6de;border-radius:14px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.06);">
+    <div style="display:flex;align-items:center;gap:8px;padding:10px 14px;background:#1a0e06;cursor:pointer;" onclick="toggleSituation()">
+      <span style="font-size:16px;">♚</span>
+      <span id="sit-title" style="font-family:'Nunito',sans-serif;font-weight:800;font-size:13px;color:#F0C040;flex:1;"></span>
+      <span id="sit-arrow" style="font-size:12px;color:#F0C040;font-weight:700;">▼</span>
+    </div>
+    <div id="sit-body" style="padding:12px 14px;display:flex;flex-direction:column;gap:10px;">
+      <div id="sit-goals"></div>
+      <div id="sit-warnings" style="display:none;"></div>
+      <button onclick="toggleWarnings()" id="warn-btn" style="align-self:flex-start;padding:5px 12px;border-radius:8px;font-family:'Nunito',sans-serif;font-weight:800;font-size:11px;border:1.5px solid #e0ddd6;background:#f9f8f4;color:#888;cursor:pointer;">⚠️ Häufige Fehler zeigen</button>
+      <div id="sit-tip" style="font-size:12px;font-weight:700;color:#8B5E3C;background:#FFF9F0;border-radius:8px;padding:8px 10px;border-left:3px solid #F0C040;"></div>
+    </div>
+  </div>
+
+  <div class="btnrow">
+    <button class="btn btnp" onclick="generatePosition()">🎲 Neue Stellung</button>
+    <button class="btn btns" onclick="undoLast()">↩ Zurück</button>
+  </div>
+
+  <div class="ctrow">
+    <span class="ctlbl">Schwierigkeit:</span>
+    <input type="range" min="1" max="3" value="2" id="diffsl" oninput="updDiff(this.value)" style="flex:1;">
+    <span class="ctval" id="diffval" style="min-width:80px;">Mittel</span>
+  </div>
+  <div class="ctrow">
+    <span class="ctlbl">Tobold Stärke:</span>
+    <input type="range" min="0" max="20" value="4" id="sksl" oninput="updSkill(this.value)">
+    <span class="ctval" id="skval">Skill 4</span>
+  </div>
+</div>
+
+<script>
+// ── PIECES ────────────────────────────────────────────
+function PC(w) {
+  return w
+    ? {body:'#FFF8E7',mid:'#EED9A0',eye:'#3D2310',shine:'#FFFFFF',blush:'#FFB8A0',ol:'#6B3F1A',gold:'#F0C040',goldD:'#C89020'}
+    : {body:'#2C1A0E',mid:'#4A2E18',eye:'#FFFFFF',shine:'rgba(255,255,255,0.45)',blush:'#5C2A1A',ol:'#0D0603',gold:'#C89020',goldD:'#8B5E10'};
+}
+function svgWrap(inner) {
+  return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="40" height="40">' + inner + '</svg>';
+}
+function drawPawn(w) {
+  var c = PC(w);
+  return svgWrap(
+    '<path d="M12 43 Q11 38 16 37 L32 37 Q37 38 36 43Z" fill="' + c.body + '" stroke="' + c.ol + '" stroke-width="1.5" stroke-linejoin="round"/>' +
+    '<path d="M15 37 Q14 33 15 31 L33 31 Q34 33 33 37Z" fill="' + c.mid + '" stroke="' + c.ol + '" stroke-width="1.5" stroke-linejoin="round"/>' +
+    '<path d="M19 31 Q18 27 20 25 L28 25 Q30 27 29 31Z" fill="' + c.body + '" stroke="' + c.ol + '" stroke-width="1.5" stroke-linejoin="round"/>' +
+    '<circle cx="24" cy="19" r="9" fill="' + c.body + '" stroke="' + c.ol + '" stroke-width="1.5"/>' +
+    '<ellipse cx="20.5" cy="18" rx="2.5" ry="3" fill="' + c.eye + '"/>' +
+    '<ellipse cx="27.5" cy="18" rx="2.5" ry="3" fill="' + c.eye + '"/>' +
+    '<circle cx="20.5" cy="18.5" r="1.5" fill="' + (w ? '#3D2310' : '#555') + '"/>' +
+    '<circle cx="27.5" cy="18.5" r="1.5" fill="' + (w ? '#3D2310' : '#555') + '"/>' +
+    '<circle cx="21.2" cy="17.8" r="0.7" fill="' + c.shine + '"/>' +
+    '<circle cx="28.2" cy="17.8" r="0.7" fill="' + c.shine + '"/>' +
+    '<path d="M21 22.5 Q24 25 27 22.5" fill="none" stroke="' + c.eye + '" stroke-width="1.3" stroke-linecap="round"/>' +
+    '<ellipse cx="18" cy="21" rx="2.5" ry="1.5" fill="' + c.blush + '" opacity="0.6"/>' +
+    '<ellipse cx="30" cy="21" rx="2.5" ry="1.5" fill="' + c.blush + '" opacity="0.6"/>'
+  );
+}
+function drawKing(w) {
+  var c = PC(w);
+  return svgWrap(
+    '<path d="M9 43 Q8 39 12 38 L36 38 Q40 39 39 43Z" fill="' + c.body + '" stroke="' + c.ol + '" stroke-width="1.5" stroke-linejoin="round"/>' +
+    '<path d="M13 38 Q11 32 11 24 Q17 28 24 28 Q31 28 37 24 Q37 32 35 38Z" fill="' + c.body + '" stroke="' + c.ol + '" stroke-width="1.5"/>' +
+    '<path d="M11 24 Q10 17 13 13 Q17 10 24 10 Q31 10 35 13 Q38 17 37 24 Q31 28 24 28 Q17 28 11 24Z" fill="' + c.body + '" stroke="' + c.ol + '" stroke-width="1.5"/>' +
+    '<circle cx="24" cy="8.5" r="7.5" fill="' + c.body + '" stroke="' + c.ol + '" stroke-width="1.5"/>' +
+    '<ellipse cx="20.5" cy="7.5" rx="2.5" ry="2.8" fill="' + c.eye + '"/>' +
+    '<ellipse cx="27.5" cy="7.5" rx="2.5" ry="2.8" fill="' + c.eye + '"/>' +
+    '<ellipse cx="20.5" cy="8" rx="1.7" ry="2" fill="' + (w ? '#2C1A0E' : '#ddd') + '"/>' +
+    '<ellipse cx="27.5" cy="8" rx="1.7" ry="2" fill="' + (w ? '#2C1A0E' : '#ddd') + '"/>' +
+    '<circle cx="21.3" cy="7.2" r="0.7" fill="' + c.shine + '"/>' +
+    '<circle cx="28.3" cy="7.2" r="0.7" fill="' + c.shine + '"/>' +
+    '<path d="M18 5.2 Q20.5 3.8 23 5" fill="' + c.mid + '" stroke="' + c.ol + '" stroke-width="1.8" stroke-linecap="round"/>' +
+    '<path d="M25 5 Q27.5 3.8 30 5.2" fill="' + c.mid + '" stroke="' + c.ol + '" stroke-width="1.8" stroke-linecap="round"/>' +
+    '<path d="M21 11.5 Q24 10.5 27 11.5" fill="none" stroke="' + c.eye + '" stroke-width="1.3" stroke-linecap="round"/>' +
+    '<path d="M20 13 Q24 15 28 13" fill="' + c.mid + '" stroke="' + c.ol + '" stroke-width="1" stroke-linecap="round"/>' +
+    '<path d="M15.5 4 L15.5 8.5 L18.5 6.5 L21 9 L24 4.5 L27 9 L29.5 6.5 L32.5 8.5 L32.5 4Z" fill="' + c.gold + '" stroke="' + c.goldD + '" stroke-width="1.3"/>' +
+    '<rect x="23" y="0.5" width="2" height="5" rx="1" fill="' + c.gold + '" stroke="' + c.goldD + '" stroke-width="0.8"/>' +
+    '<rect x="21" y="2" width="6" height="2" rx="1" fill="' + c.gold + '" stroke="' + c.goldD + '" stroke-width="0.8"/>' +
+    '<circle cx="24" cy="5" r="2" fill="#FF3B5C" stroke="' + c.goldD + '" stroke-width="0.7"/>'
+  );
+}
+function drawQueen(w) {
+  var c = PC(w);
+  return svgWrap(
+    '<path d="M9 43 Q8 39 12 38 L36 38 Q40 39 39 43Z" fill="' + c.body + '" stroke="' + c.ol + '" stroke-width="1.5" stroke-linejoin="round"/>' +
+    '<path d="M13 38 Q11 32 11 24 Q17 28 24 28 Q31 28 37 24 Q37 32 35 38Z" fill="' + c.body + '" stroke="' + c.ol + '" stroke-width="1.5"/>' +
+    '<path d="M11 24 Q10 17 13 13 Q17 10 24 10 Q31 10 35 13 Q38 17 37 24 Q31 28 24 28 Q17 28 11 24Z" fill="' + c.body + '" stroke="' + c.ol + '" stroke-width="1.5"/>' +
+    '<circle cx="24" cy="8" r="7.5" fill="' + c.body + '" stroke="' + c.ol + '" stroke-width="1.5"/>' +
+    '<ellipse cx="20.5" cy="7" rx="2.5" ry="3" fill="' + c.eye + '"/>' +
+    '<ellipse cx="27.5" cy="7" rx="2.5" ry="3" fill="' + c.eye + '"/>' +
+    '<ellipse cx="20.5" cy="7.5" rx="1.6" ry="2" fill="' + (w ? '#2C1A0E' : '#ddd') + '"/>' +
+    '<ellipse cx="27.5" cy="7.5" rx="1.6" ry="2" fill="' + (w ? '#2C1A0E' : '#ddd') + '"/>' +
+    '<circle cx="21.3" cy="6.6" r="0.7" fill="' + c.shine + '"/>' +
+    '<circle cx="28.3" cy="6.6" r="0.7" fill="' + c.shine + '"/>' +
+    '<path d="M21 10.5 Q24 13 27 10.5" fill="none" stroke="' + c.eye + '" stroke-width="1.3" stroke-linecap="round"/>' +
+    '<ellipse cx="18" cy="10" rx="2.5" ry="1.5" fill="' + c.blush + '" opacity="0.6"/>' +
+    '<ellipse cx="30" cy="10" rx="2.5" ry="1.5" fill="' + c.blush + '" opacity="0.6"/>' +
+    '<path d="M16 3 L16 8 L18.5 6 L21 9 L24 5 L27 9 L29.5 6 L32 8 L32 3Z" fill="' + c.gold + '" stroke="' + c.goldD + '" stroke-width="1.2"/>' +
+    '<circle cx="24" cy="4" r="1.8" fill="#FF6B9D" stroke="' + c.goldD + '" stroke-width="0.6"/>' +
+    '<circle cx="17.5" cy="5" r="1.2" fill="#58CC02" stroke="' + c.goldD + '" stroke-width="0.6"/>' +
+    '<circle cx="30.5" cy="5" r="1.2" fill="#1CB0F6" stroke="' + c.goldD + '" stroke-width="0.6"/>'
+  );
+}
+var PSVG = {
+  wP: function() { return drawPawn(true); },
+  bP: function() { return drawPawn(false); },
+  wK: function() { return drawKing(true); },
+  bK: function() { return drawKing(false); },
+  wQ: function() { return drawQueen(true); },
+  bQ: function() { return drawQueen(false); }
+};
+
+// ── STOCKFISH ─────────────────────────────────────────
+var sf = null, sfReady = false;
+var pendingResolve = null, pendingLines = [];
+var skillLevel = 4, numPawns = 2;
+
+function initStockfish() {
+  try {
+    sf = new Worker('stockfish.js');
+    sf.onmessage = function(e) {
+      var line = e.data;
+      if (line === 'uciok') { sf.postMessage('isready'); return; }
+      if (line === 'readyok') {
+        sfReady = true;
+        document.getElementById('engbadge').textContent = '✓ Stockfish 18';
+        document.getElementById('engbadge').className = 'engbadge ready';
+        var btn = document.getElementById('gen-btn');
+        btn.textContent = '🎲 Neue Stellung generieren';
+        btn.disabled = false;
+        generatePosition();
+        return;
+      }
+      if (line.startsWith('bestmove')) {
+        var bm = line.split(' ')[1];
+        if (pendingResolve) {
+          pendingResolve({ bestmove: bm, lines: pendingLines.slice() });
+          pendingResolve = null;
+          pendingLines = [];
+        }
+        return;
+      }
+      if (line.startsWith('info') && line.indexOf('score') >= 0) {
+        pendingLines.push(line);
+      }
+    };
+    sf.onerror = function() {
+      document.getElementById('engbadge').textContent = '✗ Kein Worker';
+      document.getElementById('engbadge').className = 'engbadge error';
+      var btn = document.getElementById('gen-btn');
+      btn.textContent = '🎲 Neue Stellung generieren';
+      btn.disabled = false;
+      setGameStatus('Stockfish-Fehler — per lokalem Server öffnen (npx serve .)', 'lose');
+    };
+    sf.postMessage('uci');
+  } catch(e) {
+    document.getElementById('engbadge').textContent = '✗ Fehler';
+    document.getElementById('engbadge').className = 'engbadge error';
+  }
+}
+
+// Returns Promise<{bestmove, lines}>
+// cp in lines is ALWAYS from side-to-move perspective
+function sfSearch(fen, depth, skill) {
+  return new Promise(function(resolve) {
+    if (!sfReady || !sf) { resolve(null); return; }
+    pendingResolve = resolve;
+    pendingLines = [];
+    sf.postMessage('ucinewgame');
+    if (skill !== null) sf.postMessage('setoption name Skill Level value ' + skill);
+    sf.postMessage('position fen ' + fen);
+    sf.postMessage('go depth ' + depth);
+  });
+}
+
+function parseCPsideToMove(lines) {
+  for (var i = lines.length - 1; i >= 0; i--) {
+    var m = lines[i].match(/score cp (-?\d+)/);
+    if (m) return parseInt(m[1]);
+    var mm = lines[i].match(/score mate (-?\d+)/);
+    if (mm) return parseInt(mm[1]) > 0 ? 99999 : -99999;
+  }
+  return null;
+}
+
+function parsePV(lines) {
+  for (var i = lines.length - 1; i >= 0; i--) {
+    var m = lines[i].match(/ pv ([\w ]+)/);
+    if (m) return m[1].trim().split(' ').slice(0, 5);
+  }
+  return [];
+}
+
+// Convert side-to-move cp to white-perspective cp
+function toWhiteCP(cp, fen) {
+  return fen.split(' ')[1] === 'b' ? -cp : cp;
+}
+
+// Full eval: returns {cp (white-perspective), bestmove, bestSAN, pvSAN}
+function evalFull(fen, depth) {
+  return sfSearch(fen, depth, null).then(function(res) {
+    if (!res) return null;
+    var cpRaw = parseCPsideToMove(res.lines);
+    if (cpRaw === null) return null;
+    var cp = toWhiteCP(cpRaw, fen);
+    var bestSAN = res.bestmove ? uciToSAN(fen, res.bestmove) : null;
+    var pvUCI = parsePV(res.lines);
+    var pvSAN = pvUCItoSAN(fen, pvUCI);
+    return { cp: cp, bestmove: res.bestmove, bestSAN: bestSAN, pvSAN: pvSAN };
+  });
+}
+
+function evalPosition(fen, depth) {
+  return sfSearch(fen, depth, null).then(function(res) {
+    if (!res) return null;
+    var cp = parseCPsideToMove(res.lines);
+    if (cp === null) return null;
+    return toWhiteCP(cp, fen);
+  });
+}
+
+function uciToSAN(fen, uciMove) {
+  try {
+    var g = new Chess(fen);
+    var res = g.move({ from: uciMove.slice(0,2), to: uciMove.slice(2,4), promotion: uciMove[4] || 'q' });
+    return res ? res.san : uciMove;
+  } catch(e) { return uciMove; }
+}
+
+function pvUCItoSAN(fen, pvUCI) {
+  var result = [];
+  try {
+    var g = new Chess(fen);
+    for (var i = 0; i < pvUCI.length; i++) {
+      var res = g.move({ from: pvUCI[i].slice(0,2), to: pvUCI[i].slice(2,4), promotion: pvUCI[i][4] || 'q' });
+      if (!res) break;
+      result.push(res.san);
+    }
+  } catch(e) {}
+  return result;
+}
+
+// Board as ASCII for Claude
+function fenToBoard(fen) {
+  var pos = fen.split(' ')[0];
+  var rows = pos.split('/');
+  var s = '  a b c d e f g h\n';
+  for (var i = 0; i < rows.length; i++) {
+    s += (8 - i) + ' ';
+    for (var j = 0; j < rows[i].length; j++) {
+      var ch = rows[i][j];
+      if (/\d/.test(ch)) {
+        for (var k = 0; k < parseInt(ch); k++) s += '. ';
+      } else {
+        s += ch + ' ';
+      }
+    }
+    s += (8 - i) + '\n';
+  }
+  s += '  a b c d e f g h';
+  return s;
+}
+
+// difficulty: 1=Leicht(+80..+200), 2=Mittel(+30..+150), 3=Schwer(+10..+80)
+var difficulty = 2;
+var DIFF_RANGES = { 1:[80,200], 2:[30,150], 3:[10,80] };
+var DIFF_LABELS = { 1:'Leicht', 2:'Mittel', 3:'Schwer' };
+var DIFF_DESC   = { 1:'Klarer Vorteil — lerne die Technik', 2:'Realistisches Spiel — muss gearbeitet werden', 3:'Knapper Vorteil — kein Fehler erlaubt' };
+
+function updDiff(v) {
+  difficulty = parseInt(v);
+  document.getElementById('diffval').textContent = DIFF_LABELS[v];
+  document.getElementById('diffval').title = DIFF_DESC[v];
+}
+
+function updSkill(v) { skillLevel = parseInt(v); document.getElementById('skval').textContent = 'Skill ' + v; }
+function setPawns(n) {
+  numPawns = n;
+  document.querySelectorAll('.pb').forEach(function(b, i) { b.classList.toggle('active', i === n - 1); });
+}
+function getApiKey() { return (document.getElementById('api-key').value || '').trim(); }
+function getSavedApiKey() {
+  try { return localStorage.getItem('anthropic_api_key') || ''; } catch (e) { return ''; }
+}
+function setSavedApiKey(value) {
+  try {
+    if (value) localStorage.setItem('anthropic_api_key', value);
+    else localStorage.removeItem('anthropic_api_key');
+  } catch (e) {}
+}
+function updateKeyIndicator(value) {
+  document.getElementById('key-ok').textContent = value && value.indexOf('sk-ant-') === 0 ? '✓' : '';
+}
+function onApiKeyInput(value) {
+  var clean = (value || '').trim();
+  setSavedApiKey(clean);
+  updateKeyIndicator(clean);
+}
+function initApiKeyInput() {
+  var input = document.getElementById('api-key');
+  if (!input) return;
+  var saved = getSavedApiKey();
+  if (!saved) return;
+  input.value = saved;
+  updateKeyIndicator(saved);
+}
+
+// ── POSITION GENERATOR ────────────────────────────────
+var generating = false;
+
+function generatePosition() {
+  if (!sfReady || generating) return;
+  generating = true;
+  var btn = document.getElementById('gen-btn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Suche Stellung…';
+  var range = DIFF_RANGES[difficulty] || DIFF_RANGES[2];
+  setGameStatus('Suche ' + DIFF_LABELS[difficulty] + '-Stellung (' + (range[0]/100).toFixed(2) + ' bis +' + (range[1]/100).toFixed(2) + ')…', '');
+  tryNextPosition(0);
+}
+
+function tryNextPosition(attempt) {
+  if (attempt >= 40) {
+    setGameStatus('Keine passende Stellung gefunden — nochmal!', '');
+    var btn = document.getElementById('gen-btn');
+    btn.disabled = false;
+    btn.textContent = '🎲 Neue Stellung generieren';
+    generating = false;
+    return;
+  }
+  var fen = buildFen(numPawns);
+  if (!fen) { tryNextPosition(attempt + 1); return; }
+  var testGame = new Chess(fen);
+  if (!testGame || testGame.moves().length === 0 || testGame.in_check()) {
+    tryNextPosition(attempt + 1);
+    return;
+  }
+  // Extra: verify kings are not adjacent (chess.js sometimes accepts these)
+  if (!kingsWellSeparated(testGame)) {
+    tryNextPosition(attempt + 1);
+    return;
+  }
+  evalPosition(fen, 12).then(function(cp) {
+    var range = DIFF_RANGES[difficulty] || DIFF_RANGES[2];
+    if (cp === null || cp < range[0] || cp > range[1]) {
+      tryNextPosition(attempt + 1);
+      return;
+    }
+    startGame(fen, cp);
+    var btn = document.getElementById('gen-btn');
+    btn.disabled = false;
+    btn.textContent = '🎲 Neue Stellung generieren';
+    generating = false;
+  });
+}
+
+function kingsWellSeparated(g) {
+  var board = g.board();
+  var wKr=-1,wKc=-1,bKr=-1,bKc=-1;
+  for(var r=0;r<8;r++) for(var c=0;c<8;c++){
+    var sq=board[r][c];
+    if(!sq)continue;
+    if(sq.type==='k'&&sq.color==='w'){wKr=r;wKc=c;}
+    if(sq.type==='k'&&sq.color==='b'){bKr=r;bKc=c;}
+  }
+  if(wKr<0||bKr<0)return false;
+  // Kings must be at least 2 squares apart in both row and column (or combined)
+  var dr=Math.abs(wKr-bKr), dc=Math.abs(wKc-bKc);
+  return (dr>=2||dc>=2) && !(dr<=1&&dc<=1);
+}
+
+function buildFen(n) {
+  var board = [];
+  for (var i = 0; i < 8; i++) board.push([null,null,null,null,null,null,null,null]);
+  var wKr, wKc, bKr, bKc, ok = false;
+  for (var t = 0; t < 100 && !ok; t++) {
+    wKr = 4 + Math.floor(Math.random() * 3);
+    wKc = Math.floor(Math.random() * 8);
+    bKr = 1 + Math.floor(Math.random() * 3);
+    bKc = Math.floor(Math.random() * 8);
+    if (Math.abs(wKr - bKr) >= 2 && Math.abs(wKc - bKc) >= 2) ok = true;
+  }
+  if (!ok) return null;
+  board[wKr][wKc] = 'K';
+  board[bKr][bKc] = 'k';
+  var cols = shuffled8();
+  for (var i = 0; i < n; i++) {
+    var c = cols[i];
+    var opts = [2,3,4,5].filter(function(r) { return !board[r][c]; });
+    if (!opts.length) return null;
+    board[opts[Math.floor(Math.random() * opts.length)]][c] = 'P';
+  }
+  var cols2 = shuffled8();
+  for (var i = 0; i < n; i++) {
+    var c = cols2[i];
+    var opts = [2,3,4,5].filter(function(r) { return !board[r][c]; });
+    if (!opts.length) return null;
+    board[opts[Math.floor(Math.random() * opts.length)]][c] = 'p';
+  }
+  var rows = [];
+  for (var r = 0; r < 8; r++) {
+    var s = '', e = 0;
+    for (var c = 0; c < 8; c++) {
+      if (board[r][c]) { if (e) { s += e; e = 0; } s += board[r][c]; }
+      else e++;
+    }
+    if (e) s += e;
+    rows.push(s);
+  }
+  return rows.join('/') + ' w - - 0 1';
+}
+
+function shuffled8() {
+  var a = [0,1,2,3,4,5,6,7];
+  for (var i = 7; i > 0; i--) {
+    var j = Math.floor(Math.random() * (i + 1));
+    var tmp = a[i]; a[i] = a[j]; a[j] = tmp;
+  }
+  return a;
+}
+
+// ── GAME STATE ────────────────────────────────────────
+var game = null, sel = null, lastMv = null, mvCnt = 1, hist = [], busy = false;
+
+function startGame(fen, initialCp) {
+  game = new Chess(fen);
+  sel = null; lastMv = null; mvCnt = 1;
+  hist = [{ fen: fen }];
+  busy = false;
+  renderBoard();
+  setEval(initialCp);
+  setGameStatus('', '');
+  resetRatingCard();
+  updateSituation();
+  document.getElementById('mctr').textContent = 'Zug 1';
+  var cpStr = (initialCp / 100).toFixed(2);
+  var tips = [
+    'Aktiviere deinen König — er ist im Endspiel deine stärkste Figur!',
+    'Suche nach Freibauern: kein schwarzer Bauer auf derselben Linie.',
+    'Opposition: König direkt gegenüber (1 Feld Abstand) erzwingt den Durchmarsch.',
+    'Randbauernn (a/h) sind schwer zu verwerten — bevorzuge zentrale Bauern.',
+    'Verbundene Freibauern sind extrem stark — führe sie gemeinsam vor.'
+  ];
+  var tip = tips[Math.floor(Math.random() * tips.length)];
+  setGameStatus('', '');
+}
+
+// ── BOARD RENDER ──────────────────────────────────────
+function rc2sq(r, c) { return 'abcdefgh'[c] + (8 - r); }
+function getEl(sq) { return document.querySelector('[data-sq="' + sq + '"]'); }
+
+function renderBoard() {
+  if (!game) return;
+  var el = document.getElementById('board');
+  el.innerHTML = '';
+  for (var r = 0; r < 8; r++) {
+    for (var c = 0; c < 8; c++) {
+      var sq = rc2sq(r, c);
+      var p = game.get(sq);
+      var div = document.createElement('div');
+      div.className = 'sq ' + ((r + c) % 2 === 0 ? 'lt' : 'dk');
+      if (lastMv && (lastMv.from === sq || lastMv.to === sq)) div.classList.add('lm');
+      div.dataset.sq = sq;
+      div.onclick = (function(s) { return function() { handleClick(s); }; })(sq);
+      if (p) {
+        var key = (p.color === 'w' ? 'w' : 'b') + p.type.toUpperCase();
+        if (PSVG[key]) div.innerHTML = PSVG[key]();
+      }
+      el.appendChild(div);
+    }
+  }
+  if (sel) {
+    var selEl = getEl(sel);
+    if (selEl) selEl.classList.add('sel');
+    var moves = game.moves({ square: sel, verbose: true });
+    for (var i = 0; i < moves.length; i++) {
+      var mEl = getEl(moves[i].to);
+      if (!mEl) continue;
+      mEl.classList.add('hl');
+      var dot = document.createElement('div');
+      dot.className = game.get(moves[i].to) ? 'cring' : 'dot';
+      mEl.appendChild(dot);
+    }
+  }
+}
+
+// ── CLICK ─────────────────────────────────────────────
+function handleClick(sq) {
+  if (!game || game.turn() !== 'w' || busy) return;
+  var p = game.get(sq);
+  if (sel) {
+    var moves = game.moves({ square: sel, verbose: true });
+    var mv = null;
+    for (var i = 0; i < moves.length; i++) { if (moves[i].to === sq) { mv = moves[i]; break; } }
+    if (mv) {
+      var fenBefore = game.fen();
+      var mo = { from: sel, to: sq };
+      if (mv.flags && mv.flags.indexOf('p') >= 0) mo.promotion = 'q';
+      var res = game.move(mo);
+      if (res) {
+        lastMv = { from: sel, to: sq };
+        sel = null;
+        mvCnt++;
+        hist.push({ fen: game.fen() });
+        document.getElementById('mctr').textContent = 'Zug ' + mvCnt;
+        renderBoard();
+        updateSituation();
+        if (!checkEnd()) afterMove(fenBefore, res);
+      }
+      return;
+    }
+    if (p && p.color === 'w') { sel = sq; renderBoard(); return; }
+    sel = null; renderBoard(); return;
+  }
+  if (p && p.color === 'w') { sel = sq; renderBoard(); }
+}
+
+// ── AFTER PLAYER MOVE ─────────────────────────────────
+function afterMove(fenBefore, move) {
+  busy = true;
+
+  // evalFull on fenBefore: gives best possible CP and best move from this position
+  // evalFull on fenAfter:  gives actual CP after player's move
+  // Both use toWhiteCP internally so both are white-perspective
+  evalFull(fenBefore, 14).then(function(sfBest) {
+    var cpBestPossible = sfBest ? sfBest.cp : 0;
+
+    evalFull(game.fen(), 14).then(function(sfAfter) {
+      var cpActual = sfAfter ? sfAfter.cp : 0;
+      var cpLoss = Math.max(0, cpBestPossible - cpActual);
+      var isBestMove = !sfBest || !sfBest.bestmove ||
+        sfBest.bestmove.slice(0, 4) === (move.from + move.to);
+
+      setEval(cpActual);
+
+      var bestSAN = sfBest ? sfBest.bestSAN : null;
+      var pvSAN   = sfBest ? sfBest.pvSAN   : [];
+
+      askClaudeForFeedback(
+        fenBefore, game.fen(), move.san, bestSAN,
+        cpBestPossible, cpActual,
+        cpActual - cpBestPossible, cpLoss,
+        isBestMove, pvSAN
+      );
+      // Tobold's reply (don't wait for Claude)
+      setTimeout(function() {
+        if (game.turn() === 'b' && !checkEnd()) {
+          sfSearch(game.fen(), 14, skillLevel).then(function(oscRes) {
+            if (oscRes && oscRes.bestmove && oscRes.bestmove !== '(none)') {
+              var from = oscRes.bestmove.slice(0, 2);
+              var to   = oscRes.bestmove.slice(2, 4);
+              var promo = oscRes.bestmove[4] || 'q';
+              var res = game.move({ from: from, to: to, promotion: promo });
+              if (res) {
+                lastMv = { from: from, to: to };
+                hist.push({ fen: game.fen() });
+                evalFull(game.fen(), 8).then(function(sfPost) {
+                  if (sfPost) setEval(sfPost.cp);
+                  renderBoard();
+                  updateSituation();
+                  checkEnd();
+                });
+              }
+            }
+            busy = false;
+          });
+        } else {
+          busy = false;
+        }
+      }, 200);
+    });
+  });
+}
+
+// ── CLAUDE FEEDBACK ───────────────────────────────────
+// ── MOVE RATING ───────────────────────────────────────
+// Stored for the explain button
+var lastMoveContext = null;
+
+var RATINGS = {
+  best:    { cls: 'great',   icon: '★',  label: 'Bester Zug' },
+  great:   { cls: 'great',   icon: '✦',  label: 'Sehr gut' },
+  good:    { cls: 'good',    icon: '●',  label: 'Guter Zug' },
+  ok:      { cls: 'ok',      icon: '▲',  label: 'Ungenau' },
+  bad:     { cls: 'bad',     icon: '✖',  label: 'Fehler' },
+  blunder: { cls: 'blunder', icon: '??', label: 'Grober Fehler' },
+};
+
+function classifyMove(cpLoss, isBestMove) {
+  if (isBestMove)   return 'best';
+  if (cpLoss <  20) return 'great';
+  if (cpLoss <  60) return 'good';
+  if (cpLoss < 150) return 'ok';
+  if (cpLoss < 300) return 'bad';
+  return 'blunder';
+}
+
+function cpStr(cp) {
+  if (cp === null || cp === undefined) return '—';
+  if (Math.abs(cp) > 9000) return cp > 0 ? '+M' : '-M';
+  return (cp >= 0 ? '+' : '') + (cp / 100).toFixed(2);
+}
+
+function resetRatingCard() {
+  lastMoveContext = null;
+  document.getElementById('rating-label').className = 'rating-label idle';
+  document.getElementById('rating-label').textContent = 'Ziehe eine Figur';
+  document.getElementById('cp-player-move').textContent = '—';
+  document.getElementById('cp-player').textContent = '—';
+  document.getElementById('cp-player').className = 'cp-val';
+  document.getElementById('cp-best-move').textContent = '—';
+  document.getElementById('cp-best-move').style.color = '#3d3d3a';
+  document.getElementById('cp-best').textContent = '—';
+  document.getElementById('cp-best').className = 'cp-val';
+  document.getElementById('explain-btn').style.display = 'none';
+  document.getElementById('explain-box').className = 'explain-box';
+  document.getElementById('explain-box').innerHTML = '';
+}
+
+function setMoveRating(ratingKey, cpPlayer, cpBestMove, playerMove, bestMove) {
+  var r = RATINGS[ratingKey] || RATINGS.ok;
+  var label = document.getElementById('rating-label');
+  var cpPl  = document.getElementById('cp-player');
+  var cpBst = document.getElementById('cp-best');
+  var movePl  = document.getElementById('cp-player-move');
+  var moveBst = document.getElementById('cp-best-move');
+  var btn   = document.getElementById('explain-btn');
+  var box   = document.getElementById('explain-box');
+
+  label.className = 'rating-label ' + r.cls;
+  label.textContent = r.icon + ' ' + r.label;
+
+  // Player move + CP
+  movePl.textContent = playerMove || '—';
+  movePl.style.fontWeight = '900';
+  movePl.style.color = '#3d3d3a';
+  cpPl.textContent  = cpStr(cpPlayer);
+  cpPl.className    = 'cp-val' + (cpPlayer >= 0 ? ' pos' : ' neg');
+
+  // Best move + CP
+  var isBest = !bestMove || bestMove === playerMove;
+  moveBst.textContent = isBest ? '✓ ' + (playerMove||'—') : (bestMove || '—');
+  moveBst.style.fontWeight = '900';
+  moveBst.style.color = isBest ? '#3d9900' : '#c0392b';
+  cpBst.textContent = cpStr(cpBestMove);
+  cpBst.className   = 'cp-val' + (cpBestMove >= 0 ? ' pos' : ' neg');
+
+  btn.style.display = 'block';
+  btn.disabled = false;
+  btn.textContent = '🦉 Tobold erklärt warum';
+  box.className = 'explain-box';
+  box.innerHTML = '';
+}
+
+function setGameStatus(msg, type) {
+  var el = document.getElementById('game-status');
+  if (!msg) { el.style.display = 'none'; return; }
+  el.style.display = 'block';
+  var bg = type === 'win'  ? '#eaf7d8' :
+           type === 'lose' ? '#fde8e8' :
+           type === 'draw' ? '#fff3cd' : '#f5f4ef';
+  var col = type === 'win'  ? '#3d9900' :
+            type === 'lose' ? '#c0392b' :
+            type === 'draw' ? '#9a6400' : '#888';
+  el.style.background = bg;
+  el.style.color = col;
+  el.textContent = msg;
+}
+
+function setRatingThinking() {
+  var label = document.getElementById('rating-label');
+  label.className = 'rating-label idle'; label.textContent = 'SF18 analysiert…';
+}
+
+function loadExplanation() {
+  if (!lastMoveContext) return;
+  var btn = document.getElementById('explain-btn');
+  var box = document.getElementById('explain-box');
+  var apiKey = getApiKey();
+
+  btn.disabled = true;
+  btn.innerHTML = '<div class="thdots"><div class="dp"></div><div class="dp"></div><div class="dp"></div></div>';
+  box.className = 'explain-box';
+
+  var ctx = lastMoveContext;
+  var boardBefore = fenToBoard(ctx.fen);
+  var boardAfter  = fenToBoard(ctx.fenAfter);
+  var isBest = ctx.isBestMove || !ctx.bestMove;
+  var pvStr  = (ctx.pvSAN || []).slice(0, 4).join(' → ');
+
+  // Legal moves FROM the position before the move (so Claude knows what was possible)
+  var legalBefore = ctx.legalBefore || [];
+  // Legal moves in current position (so Claude doesn't suggest illegal moves)
+  var legalAfter  = ctx.legalAfter  || [];
+
+  var lossText = (ctx.cpLoss && ctx.cpLoss > 10) ? ('Verlust: ' + (ctx.cpLoss/100).toFixed(2) + ' Bauerneinheiten') : '';
+
+  var goodExample = ctx.isBestMove
+    ? 'Gutes Beispiel: \"Mit Ke5 stellst du deinen König direkt vor den e4-Bauern — das ist das Schlüsselfeld. Von e5 kontrollierst du d6 und f6, der schwarze König kann den Bauern nicht mehr aufhalten.\"'
+    : 'Gutes Beispiel: \"' + ctx.playerMove + ' geht in die falsche Richtung. Mit ' + ctx.bestMove + ' hättest du die Opposition gewonnen: Schwarz müsste zurückweichen und der Bauer marschiert durch.\"';
+
+  var task = ctx.isBestMove
+    ? ('Erkläre in 2-3 Sätzen WARUM \"' + ctx.playerMove + '\" der beste Zug war. Beantworte konkret: Welches Feld/Plan ermöglicht dieser Zug? Warum kann Schwarz nicht mehr widerstehen? ' + goodExample)
+    : ('Erkläre in 2-3 Sätzen WARUM \"' + ctx.bestMove + '\" besser war als \"' + ctx.playerMove + '\". Was macht ' + ctx.bestMove + ' konkret — welches Feld, welcher Plan? Was geht durch ' + ctx.playerMove + ' verloren? ' + goodExample);
+
+  var content =
+    'BRETT VOR DEM ZUG:\n' + boardBefore +
+    '\nAlle legalen Züge für Weiß: ' + legalBefore.join(', ') +
+    '\n\nWEIß ZOG: ' + ctx.playerMove +
+    '\nStockfish vorher: ' + cpStr(ctx.cpBefore) + ' / nachher: ' + cpStr(ctx.cpAfter) +
+    (lossText ? ' (' + lossText + ')' : '') +
+    '\n\nBRETT NACH DEM ZUG:\n' + boardAfter +
+    '\nLegale Züge für Schwarz: ' + legalAfter.join(', ') +
+    '\n\nSTOCKFISH: ' + (ctx.isBestMove ? 'Bester Zug! PV: ' + pvStr : 'Besser wäre: ' + ctx.bestMove + ' | PV: ' + pvStr) +
+    '\n\nAUFGABE: ' + task +
+    '\nSprache: Deutsch. Sprich den Spieler direkt an (du). Keine leeren Floskeln. Nenne konkrete Felder.' +
+    '\nNUR JSON: {\"explanation\":\"2-3 Sätze\"}';
+
+  fetch('/api/explain', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      content: content,
+      apiKey: apiKey || null
+    })
+  }).then(function(r) {
+    if (!r.ok) return r.json().then(function(err) { throw new Error(err.error || 'API-Fehler'); });
+    return r.json();
+  })
+    .then(function(d) {
+      var raw = (d.content && d.content[0] && d.content[0].text) || '{}';
+      var j = JSON.parse(raw.replace(/```json|```/g, '').trim());
+      box.className = 'explain-box visible';
+      box.textContent = j.explanation || '—';
+      btn.style.display = 'none';
+    })
+    .catch(function(err) {
+      box.className = 'explain-box visible';
+      box.textContent = err && err.message ? ('Fehler beim Laden: ' + err.message) : 'Fehler beim Laden — API-Key prüfen.';
+      btn.disabled = false;
+      btn.textContent = '🔄 Nochmal versuchen';
+    });
+}
+
+function askClaudeForFeedback(fen, fenAfter, playerMove, bestMove, cpBest, cpAfter, delta, cpLoss, isBestMove, pvSAN) {
+  // Compute legal moves for context
+  var legalBefore = [], legalAfter = [];
+  try { legalBefore = new Chess(fen).moves(); } catch(e) {}
+  try { legalAfter  = new Chess(fenAfter).moves(); } catch(e) {}
+
+  // Store full context for the explain button
+  lastMoveContext = {
+    fen: fen, fenAfter: fenAfter,
+    playerMove: playerMove, bestMove: bestMove,
+    cpBefore: cpBest, cpAfter: cpAfter,
+    isBestMove: isBestMove, pvSAN: pvSAN,
+    legalBefore: legalBefore, legalAfter: legalAfter
+  };
+
+  var ratingKey = classifyMove(cpLoss, isBestMove);
+  setMoveRating(ratingKey, cpAfter, cpBest, playerMove, bestMove);
+}
+
+// ── EVAL BAR ──────────────────────────────────────────
+// cp always from white's perspective: + = white better, - = black better
+function setEval(cp) {
+  if (cp === null || cp === undefined) return;
+  var clamped = Math.max(-500, Math.min(500, cp));
+  var pct = 50 + (clamped / 500) * 47;
+  var fill = document.getElementById('evalfill');
+  var lbl  = document.getElementById('evallbl');
+  fill.style.width = pct + '%';
+  var isMate = Math.abs(cp) > 9000;
+  var display = isMate ? (cp > 0 ? '+M' : '-M') : (cp >= 0 ? '+' : '') + (cp / 100).toFixed(2);
+  if (cp > 20)       { fill.className = 'evalfill pos'; lbl.className = 'evallbl pos'; }
+  else if (cp < -20) { fill.className = 'evalfill neg'; lbl.className = 'evallbl neg'; }
+  else               { fill.className = 'evalfill pos'; lbl.className = 'evallbl eq'; }
+  lbl.textContent = display;
+}
+
+// ── GAME END ──────────────────────────────────────────
+function checkEnd() {
+  if (!game) return false;
+  if (game.in_checkmate()) {
+    var ww = game.turn() === 'b';
+    setGameStatus(ww ? '🎉 Schachmatt! Gewonnen!' : '❌ Niederlage — neue Stellung!', ww ? 'win' : 'lose');
+    return true;
+  }
+  if (game.in_stalemate() || game.in_draw()) {
+    setGameStatus('½ Remis — Patt oder Dauerschach!', 'draw');
+    return true;
+  }
+  var pos = game.fen().split(' ')[0];
+  if (pos.indexOf('Q') >= 0 && hist[0] && hist[0].fen.split(' ')[0].indexOf('Q') < 0) {
+    setGameStatus('👑 Umwandlung! Bauer wird Dame.', 'win');
+  }
+  return false;
+}
+
+// ── UNDO ──────────────────────────────────────────────
+function undoLast() {
+  if (!hist || hist.length <= 1) { setGameStatus('Das ist bereits die Ausgangsstellung.', ''); return; }
+  if (hist.length > 2) hist.splice(-2); else hist.pop();
+  game = new Chess(hist[hist.length - 1].fen);
+  sel = null; lastMv = null; busy = false;
+  mvCnt = Math.max(1, mvCnt - 1);
+  document.getElementById('mctr').textContent = 'Zug ' + mvCnt;
+  renderBoard();
+  setGameStatus('', '');
+  resetRatingCard();
+  updateSituation();
+  evalPosition(game.fen(), 10).then(function(cp) { if (cp !== null) setEval(cp); });
+}
+
+
+// ── ENDGAME CATALOG ───────────────────────────────────────────────
+var ENDGAME_CATALOG = [
+  {
+    id:'kp_vs_k_rook',priority:100,
+    match:function(p){return p.wP===1&&p.bP===0&&noOther(p)&&(p.wPfiles[0]===0||p.wPfiles[0]===7);},
+    title:'König + Randbauer vs König',
+    goals:['König auf Schlüsselfelder b7/a7 bringen (bei a-Bauer)','Schwarzen König aus der Ecke a8/b8 heraushalten','Vorsicht: Patt! Nie Bauer vorrücken wenn schwarzer König auf a8 und kein Ausweg'],
+    warnings:['⚠️ Randbauer (a/h) gewinnt NUR wenn König b7/a7 besetzt','⚠️ b7+ wenn schwarzer König auf a8 = sofortiges PATT → Remis!','⚠️ Schwarzer König auf a8 + Weißer König auf a6 = immer Remis'],
+    tip:'💡 Randbauern führen oft zu Patt. Der schwarze König versteckt sich in der Ecke — du kannst ihn nicht herausschlagen.'
+  },
+  {
+    id:'kp_vs_k',priority:90,
+    match:function(p){return p.wP===1&&p.bP===0&&noOther(p);},
+    title:'König + Bauer vs König',
+    goals:['König auf die 6. Reihe VOR den Bauern bringen (Ke6 bei e-Bauer)','Opposition gewinnen: Könige direkt gegenüber, 1 Feld Abstand, Gegner am Zug','Schlüsselfelder besetzen — 2 Felder vor dem Bauern (e-Bauer → d6, e6, f6)','Erst dann: Bauer vorrücken'],
+    warnings:['⚠️ Bauer zu früh vorschieben ohne König davor = Remis!','⚠️ König hinter dem Bauern verliert die Opposition','⚠️ Bauer auf 7. Reihe ohne König davor kann Patt sein'],
+    tip:'💡 König MUSS auf die 6. Reihe vor den Bauern. Dann ist Sieg garantiert — egal was Schwarz macht.'
+  },
+  {
+    id:'kpp_vs_k',priority:85,
+    match:function(p){return p.wP===2&&p.bP===0&&noOther(p);},
+    title:'König + 2 Bauern vs König',
+    goals:['Verbundene Bauern gemeinsam vorrücken — sie schützen sich gegenseitig','König aktiv halten — schwarzen König von den Bauern fernhalten','Einen Bauern opfern um den anderen durchmarschieren zu lassen','Außenfreibauer ist am stärksten (zieht schwarzen König weg)'],
+    warnings:['⚠️ Bauern nie einzeln ohne Königsunterstützung vorrücken','⚠️ Zwei Randbauern (a+h) gegen König können Remis sein','⚠️ Pattfallen: niemals den schwarzen König einmauern ohne Fluchtweg'],
+    tip:'💡 Zwei verbundene Bauern auf der 6. Reihe gewinnen immer — sie können nicht beide gestoppt werden.'
+  },
+  {
+    id:'kppp_vs_kp_more',priority:80,
+    match:function(p){return p.wP>=2&&p.bP>=1&&noOther(p)&&p.wP>p.bP;},
+    title:'Bauernmehrheit — Freibauern schaffen',
+    goals:['Außenfreibauern schaffen: Mehrheitsbauern auf dem Flügel ohne Gegenbauern nutzen','Ablenkungsmanöver: Freibauer zwingt schwarzen König auf diesen Flügel','Einbruch: Weißer König bricht auf der leer gewordenen anderen Seite ein','Bauernmehrheit systematisch verwandeln'],
+    warnings:['⚠️ Falschen Freibauern schaffen — Außenfreibauer ist stärker als Mittelfreibauer','⚠️ Passiver König verliert auch mit Mehrbauer','⚠️ Zugzwang berechnen — manchmal ist Warten stärker als Vorrücken'],
+    tip:'💡 Außenfreibauer = Ablenkung. Er zwingt schwarzen König an den Rand, dann bricht weißer König auf der anderen Seite ein.'
+  },
+  {
+    id:'kp_vs_kp_sym',priority:75,
+    match:function(p){return p.wP>=1&&p.bP>=1&&noOther(p)&&p.wP===p.bP;},
+    title:'Symmetrisches Bauernendspiel',
+    goals:['Opposition gewinnen — bestimmt wer als erstes einbricht','Durchbruch berechnen: Bauernopfer um Freibauern zu schaffen','König zentralisieren — aktiver König gewinnt','Fernopposition: ungerade Abstände zwischen den Königen bevorzugen'],
+    warnings:['⚠️ Bauernschwächungen ohne Gegenleistung vermeiden','⚠️ Zugzwang-Fallen (Minenfelder) vor dem Einmarsch berechnen','⚠️ Symmetrie täuscht — wer am Zug ist entscheidet alles'],
+    tip:'💡 In symmetrischen Stellungen gewinnt wessen König zuerst auf die 5. Reihe des Gegners einbricht.'
+  },
+  {
+    id:'q_vs_alone',priority:70,
+    match:function(p){return p.wQ>=1&&p.bQ===0&&p.bR===0&&p.bB===0&&p.bN===0&&p.bP===0;},
+    title:'Dame + Bauern vs nackter König',
+    goals:['Schwarzen König an den Rand treiben (Box-Methode mit der Dame)','Weißen König einsetzen — Dame allein kann nicht mattsetzen','Box immer kleiner ziehen bis Matt','Kein Patt durch zu enge Einschränkung!'],
+    warnings:['⚠️ PATT! Dame zu nah → schwarzer König hat keine Züge = Remis','⚠️ Dame allein kann nicht mattsetzen — König MUSS mitspielen','⚠️ Bauer nicht zu nah an schwarzen König schieben — Pattgefahr'],
+    tip:'💡 Box-Methode: Mit Dame ein immer kleiner werdendes Rechteck um den schwarzen König ziehen, dann König einmarschieren lassen.'
+  },
+  {
+    id:'qp_vs_q',priority:65,
+    match:function(p){return p.wQ>=1&&p.bQ>=1&&p.wP>=1&&p.bP===0;},
+    title:'Dame + Bauer vs Dame',
+    goals:['Bauer auf die 7. Reihe bringen — das ist das Hauptziel','Dauerschach vermeiden: König nicht am Rand, möglichst zentralisiert','Damentausch erzwingen wenn Bauer weit genug vorgedrungen','Schwarze Dame vom Bauer fernhalten'],
+    warnings:['⚠️ Turm- (a/h) und Läuferbauer (c/f) auf 7. Reihe mit König dahinter = nur REMIS!','⚠️ Dauerschach: schwarze Dame rettet die Partie wenn König offen steht','⚠️ Damentausch nur erzwingen wenn das entstehende Bauernendspiel gewonnen ist'],
+    tip:'💡 Nur d- und e-Bauer auf 7. Reihe gewinnen sicher. Alle anderen Bauern haben Remismöglichkeiten für Schwarz!'
+  },
+  {
+    id:'passed_race',priority:60,
+    match:function(p){return p.wP>=1&&p.bP>=1&&noOther(p);},
+    title:'Freibauer — Quadratregel & Rennen',
+    goals:['Quadratregel prüfen: Kann schwarzer König den Bauern im Quadrat stoppen?','Umwandlung mit Schach anstreben — spart 1 Tempo','Opposition nutzen um gegnerischen Freibauern zu blockieren','Tempozählen: Wer verwandelt zuerst? Bei Gleichstand: Schach beim Umwandeln'],
+    warnings:['⚠️ Quadratregel vergessen — schwarzer König läuft scheinbar hinterher aber stoppt den Bauern','⚠️ Umwandlung ohne Schach kann verlieren wenn Gegner sofort umwandelt','⚠️ Remis wenn beide gleichzeitig Dame bekommen und Dauerschach möglich'],
+    tip:'💡 Quadrat vom Bauern zur 8. Reihe zeichnen: Ist der schwarze König DARIN → stoppt er den Bauern. DRAUSSEN → Umwandlung!'
+  },
+  {
+    id:'general',priority:1,
+    match:function(p){return true;},
+    title:'Bauernendspiel — Grundprinzipien',
+    goals:['König aktivieren — im Endspiel ist der König eine starke Figur!','Freibauern schaffen — Bauer ohne Gegenbauern auf seiner Linie','Opposition halten — wer die Opposition hat, bestimmt den Einbruch','Zugzwang nutzen — Gegner zum Rückzug zwingen'],
+    warnings:['⚠️ Passiver König verliert fast immer','⚠️ Bauern zu früh vorrücken ohne Königsunterstützung','⚠️ Pattfallen beim Einengen des gegnerischen Königs übersehen'],
+    tip:'💡 Die drei goldenen Regeln: 1) König aktivieren, 2) Freibauern schaffen, 3) Opposition halten.'
+  }
+];
+
+function noOther(p){return p.wQ===0&&p.bQ===0&&p.wR===0&&p.bR===0&&p.wB===0&&p.bB===0&&p.wN===0&&p.bN===0;}
+
+function getPieceCounts(){
+  if(!game)return null;
+  var b=game.board();
+  var p={wP:0,bP:0,wK:0,bK:0,wQ:0,bQ:0,wR:0,bR:0,wB:0,bB:0,wN:0,bN:0,wPfiles:[],bPfiles:[]};
+  for(var r=0;r<8;r++) for(var c=0;c<8;c++){
+    var sq=b[r][c]; if(!sq)continue;
+    var k=(sq.color==='w'?'w':'b')+sq.type.toUpperCase();
+    p[k]++;
+    if(sq.type==='p'){ if(sq.color==='w')p.wPfiles.push(c); else p.bPfiles.push(c); }
+  }
+  return p;
+}
+
+function detectSituation(){
+  var p=getPieceCounts(); if(!p)return null;
+  var matches=ENDGAME_CATALOG.filter(function(e){try{return e.match(p);}catch(e){return false;}});
+  if(!matches.length)return null;
+  matches.sort(function(a,b){return b.priority-a.priority;});
+  return matches[0];
+}
+
+var sitOpen=true, warnOpen=false;
+
+function updateSituation(){
+  var sit=detectSituation();
+  var panel=document.getElementById('situation-panel');
+  if(!sit){panel.style.display='none';return;}
+  panel.style.display='block';
+  document.getElementById('sit-title').textContent=sit.title;
+
+  // Goals
+  var gl=document.getElementById('sit-goals');
+  gl.innerHTML=sit.goals.map(function(g){
+    return '<div style="font-size:12px;font-weight:700;color:#3d3d3a;padding:3px 0;border-bottom:0.5px solid #f0ede5;">'+g+'</div>';
+  }).join('');
+
+  // Warnings
+  var wl=document.getElementById('sit-warnings');
+  wl.innerHTML=sit.warnings.map(function(w){
+    return '<div style="font-size:12px;font-weight:700;color:#c0392b;padding:3px 0;">'+w+'</div>';
+  }).join('');
+
+  // Tip
+  document.getElementById('sit-tip').textContent=sit.tip;
+
+  // Reset warnings visibility
+  warnOpen=false;
+  wl.style.display='none';
+  document.getElementById('warn-btn').textContent='⚠️ Häufige Fehler zeigen';
+}
+
+function toggleSituation(){
+  sitOpen=!sitOpen;
+  document.getElementById('sit-body').style.display=sitOpen?'flex':'none';
+  document.getElementById('sit-arrow').textContent=sitOpen?'▼':'▶';
+}
+
+function toggleWarnings(){
+  warnOpen=!warnOpen;
+  document.getElementById('sit-warnings').style.display=warnOpen?'block':'none';
+  document.getElementById('warn-btn').textContent=warnOpen?'▲ Ausblenden':'⚠️ Häufige Fehler zeigen';
+}
+
+// ── INIT ──────────────────────────────────────────────
+updSkill(4);
+initApiKeyInput();
+initStockfish();
+</script>
+</body>
+</html>
