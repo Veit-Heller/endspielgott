@@ -930,6 +930,12 @@ function setEval(cp) {
   var absVal = isMate ? 'M' : (Math.abs(cp) / 100).toFixed(2);
   document.getElementById('evallbl-w').textContent = cp >= 0 ? '+' + absVal : (cp === 0 ? '0.00' : '—');
   document.getElementById('evallbl-b').textContent = cp <= 0 ? (cp === 0 ? '0.00' : '+' + (Math.abs(cp)/100).toFixed(2)) : '—';
+
+  // Abkürzen der Labels, wenn der jeweilige Block sehr klein ist
+  var bLbl = document.querySelector('#evalblk-b .evalblk-label');
+  var wLbl = document.querySelector('#evalblk-w .evalblk-label');
+  if (bLbl) bLbl.textContent = bFlex < 20 ? 'S' : 'Schwarz';
+  if (wLbl) wLbl.textContent = wFlex < 20 ? 'W' : 'Weiß';
 }
 
 // ── GAME END ──────────────────────────────────────────
