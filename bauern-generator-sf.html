@@ -54,12 +54,17 @@ h1 span{color:#58CC02;}
 .lm.lt{background:#d4e087;}.lm.dk{background:#9aaa3e;}
 .dot{position:absolute;width:14px;height:14px;border-radius:50%;background:rgba(0,0,0,.17);pointer-events:none;z-index:2;}
 .cring{position:absolute;width:42px;height:42px;border-radius:50%;border:3px solid rgba(0,0,0,.22);pointer-events:none;z-index:2;}
-.evalrow{width:100%;display:flex;align-items:center;gap:8px;}
-.evalbg{flex:1;height:8px;border-radius:4px;background:#e0ddd6;overflow:hidden;}
-.evalfill{height:100%;border-radius:4px;transition:width .6s;}
-.evalfill.pos{background:#58CC02;}.evalfill.neg{background:#FF4B4B;}
-.evallbl{font-size:11px;font-weight:800;min-width:52px;text-align:right;}
-.evallbl.pos{color:#3d9900;}.evallbl.neg{color:#cc2200;}.evallbl.eq{color:#888;}
+.evalrow{width:100%;display:flex;align-items:stretch;gap:3px;height:48px;}
+.evalblk{display:flex;flex-direction:column;justify-content:center;padding:0 12px;border-radius:10px;transition:flex .6s cubic-bezier(.4,0,.2,1);overflow:hidden;min-width:0;}
+.evalblk-b{background:#3a2e22;flex:50;}
+.evalblk-w{background:#e8e6de;flex:50;}
+.evalblk-label{font-size:9px;font-weight:900;letter-spacing:.12em;text-transform:uppercase;opacity:.6;}
+.evalblk-b .evalblk-label{color:#c8a882;}
+.evalblk-w .evalblk-label{color:#7a6a58;text-align:right;}
+.evalblk-score{font-size:18px;font-weight:900;line-height:1.1;}
+.evalblk-b .evalblk-score{color:#F0C040;}
+.evalblk-w .evalblk-score{color:#3d3d3a;text-align:right;}
+.evaldivider{width:3px;background:#fff;border-radius:2px;flex-shrink:0;align-self:stretch;}
 /* ── Move rating card ── */
 .move-card{width:100%;background:#fff;border:1px solid #e8e6de;border-radius:14px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.06);}
 .move-card-top{display:flex;align-items:center;gap:0;padding:0;}
@@ -120,21 +125,28 @@ input[type=range]{flex:1;accent-color:#58CC02;}
     <span class="mctr" id="mctr">Zug 1</span>
   </div>
 
-  <div class="board-outer">
+  <div class="board-outer" style="align-self:center;">
     <div class="board-frame">
-      <div class="frow"><span class="fl">a</span><span class="fl">b</span><span class="fl">c</span><span class="fl">d</span><span class="fl">e</span><span class="fl">f</span><span class="fl">g</span><span class="fl">h</span></div>
       <div class="bmid">
         <div class="rnks"><span class="rl">8</span><span class="rl">7</span><span class="rl">6</span><span class="rl">5</span><span class="rl">4</span><span class="rl">3</span><span class="rl">2</span><span class="rl">1</span></div>
-        <div id="board"></div>
+        <div style="display:flex;flex-direction:column;">
+          <div id="board"></div>
+          <div class="frow" style="padding-top:4px;padding-bottom:0;"><span class="fl">a</span><span class="fl">b</span><span class="fl">c</span><span class="fl">d</span><span class="fl">e</span><span class="fl">f</span><span class="fl">g</span><span class="fl">h</span></div>
+        </div>
       </div>
     </div>
   </div>
 
   <div class="evalrow">
-    <span style="font-size:11px;font-weight:700;color:#888">Schwarz ▲</span>
-    <div class="evalbg"><div class="evalfill pos" id="evalfill" style="width:50%"></div></div>
-    <span style="font-size:11px;font-weight:700;color:#888">▲ Weiß</span>
-    <span class="evallbl eq" id="evallbl">+0.00</span>
+    <div class="evalblk evalblk-b" id="evalblk-b">
+      <div class="evalblk-label">Schwarz</div>
+      <div class="evalblk-score" id="evallbl-b">—</div>
+    </div>
+    <div class="evaldivider"></div>
+    <div class="evalblk evalblk-w" id="evalblk-w">
+      <div class="evalblk-label">Weiß</div>
+      <div class="evalblk-score" id="evallbl-w">—</div>
+    </div>
   </div>
 
   <div class="pbar">
@@ -201,10 +213,11 @@ function PC(w) {
     ? {body:'#FFF8E7',mid:'#EED9A0',eye:'#3D2310',shine:'#FFFFFF',blush:'#FFB8A0',ol:'#6B3F1A',gold:'#F0C040',goldD:'#C89020'}
     : {body:'#2C1A0E',mid:'#4A2E18',eye:'#FFFFFF',shine:'rgba(255,255,255,0.45)',blush:'#5C2A1A',ol:'#0D0603',gold:'#C89020',goldD:'#8B5E10'};
 }
-function svgWrap(inner) {
-  return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="40" height="40">' + inner + '</svg>';
+function svgWrap(inner, flip) {
+  var g = flip ? '<g transform="scale(1,-1) translate(0,-48)">' + inner + '</g>' : inner;
+  return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="40" height="40">' + g + '</svg>';
 }
-function drawPawn(w) {
+function drawPawn(w, flip) {
   var c = PC(w);
   return svgWrap(
     '<path d="M12 43 Q11 38 16 37 L32 37 Q37 38 36 43Z" fill="' + c.body + '" stroke="' + c.ol + '" stroke-width="1.5" stroke-linejoin="round"/>' +
@@ -220,9 +233,9 @@ function drawPawn(w) {
     '<path d="M21 22.5 Q24 25 27 22.5" fill="none" stroke="' + c.eye + '" stroke-width="1.3" stroke-linecap="round"/>' +
     '<ellipse cx="18" cy="21" rx="2.5" ry="1.5" fill="' + c.blush + '" opacity="0.6"/>' +
     '<ellipse cx="30" cy="21" rx="2.5" ry="1.5" fill="' + c.blush + '" opacity="0.6"/>'
-  );
+  , flip);
 }
-function drawKing(w) {
+function drawKing(w, flip) {
   var c = PC(w);
   return svgWrap(
     '<path d="M9 43 Q8 39 12 38 L36 38 Q40 39 39 43Z" fill="' + c.body + '" stroke="' + c.ol + '" stroke-width="1.5" stroke-linejoin="round"/>' +
@@ -243,9 +256,9 @@ function drawKing(w) {
     '<rect x="23" y="0.5" width="2" height="5" rx="1" fill="' + c.gold + '" stroke="' + c.goldD + '" stroke-width="0.8"/>' +
     '<rect x="21" y="2" width="6" height="2" rx="1" fill="' + c.gold + '" stroke="' + c.goldD + '" stroke-width="0.8"/>' +
     '<circle cx="24" cy="5" r="2" fill="#FF3B5C" stroke="' + c.goldD + '" stroke-width="0.7"/>'
-  );
+  , flip);
 }
-function drawQueen(w) {
+function drawQueen(w, flip) {
   var c = PC(w);
   return svgWrap(
     '<path d="M9 43 Q8 39 12 38 L36 38 Q40 39 39 43Z" fill="' + c.body + '" stroke="' + c.ol + '" stroke-width="1.5" stroke-linejoin="round"/>' +
@@ -265,15 +278,15 @@ function drawQueen(w) {
     '<circle cx="24" cy="4" r="1.8" fill="#FF6B9D" stroke="' + c.goldD + '" stroke-width="0.6"/>' +
     '<circle cx="17.5" cy="5" r="1.2" fill="#58CC02" stroke="' + c.goldD + '" stroke-width="0.6"/>' +
     '<circle cx="30.5" cy="5" r="1.2" fill="#1CB0F6" stroke="' + c.goldD + '" stroke-width="0.6"/>'
-  );
+  , flip);
 }
 var PSVG = {
   wP: function() { return drawPawn(true); },
-  bP: function() { return drawPawn(false); },
+  bP: function() { return drawPawn(false, true); },
   wK: function() { return drawKing(true); },
-  bK: function() { return drawKing(false); },
+  bK: function() { return drawKing(false, true); },
   wQ: function() { return drawQueen(true); },
-  bQ: function() { return drawQueen(false); }
+  bQ: function() { return drawQueen(false, true); }
 };
 
 // ── STOCKFISH ─────────────────────────────────────────
@@ -906,17 +919,18 @@ function askClaudeForFeedback(fen, fenAfter, playerMove, bestMove, cpBest, cpAft
 // cp always from white's perspective: + = white better, - = black better
 function setEval(cp) {
   if (cp === null || cp === undefined) return;
-  var clamped = Math.max(-500, Math.min(500, cp));
-  var pct = 50 + (clamped / 500) * 47;
-  var fill = document.getElementById('evalfill');
-  var lbl  = document.getElementById('evallbl');
-  fill.style.width = pct + '%';
   var isMate = Math.abs(cp) > 9000;
-  var display = isMate ? (cp > 0 ? '+M' : '-M') : (cp >= 0 ? '+' : '') + (cp / 100).toFixed(2);
-  if (cp > 20)       { fill.className = 'evalfill pos'; lbl.className = 'evallbl pos'; }
-  else if (cp < -20) { fill.className = 'evalfill neg'; lbl.className = 'evallbl neg'; }
-  else               { fill.className = 'evalfill pos'; lbl.className = 'evallbl eq'; }
-  lbl.textContent = display;
+  var clamped = Math.max(-500, Math.min(500, cp));
+  // flex values: white gets more when cp > 0, black gets more when cp < 0
+  // base 50/50, shift by up to 40
+  var wFlex = 50 + (clamped / 500) * 40;
+  var bFlex = 100 - wFlex;
+  document.getElementById('evalblk-b').style.flex = bFlex;
+  document.getElementById('evalblk-w').style.flex = wFlex;
+
+  var absVal = isMate ? 'M' : (Math.abs(cp) / 100).toFixed(2);
+  document.getElementById('evallbl-w').textContent = cp >= 0 ? '+' + absVal : (cp === 0 ? '0.00' : '—');
+  document.getElementById('evallbl-b').textContent = cp <= 0 ? (cp === 0 ? '0.00' : '+' + (Math.abs(cp)/100).toFixed(2)) : '—';
 }
 
 // ── GAME END ──────────────────────────────────────────
