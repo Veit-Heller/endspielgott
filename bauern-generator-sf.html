@@ -106,18 +106,19 @@ input[type=range]{flex:1;accent-color:#58CC02;}
 <div id="app">
   <h1>♟ Bauern<span>endspiel</span></h1>
 
-  <div class="setup">
-    <div class="setup-row">
-      <span class="setup-lbl">Bauern pro Seite:</span>
-      <div class="pawn-btns">
-        <button class="pb" onclick="setPawns(1)">1</button>
-        <button class="pb active" onclick="setPawns(2)">2</button>
-        <button class="pb" onclick="setPawns(3)">3</button>
-        <button class="pb" onclick="setPawns(4)">4</button>
-        <button class="pb" onclick="setPawns(5)">5</button>
-      </div>
+  <!-- Endgame situation panel -->
+  <div id="situation-panel" style="display:none;width:100%;background:#fff;border:1px solid #e8e6de;border-radius:14px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.06);">
+    <div style="display:flex;align-items:center;gap:8px;padding:10px 14px;background:#1a0e06;cursor:pointer;" onclick="toggleSituation()">
+      <span style="font-size:16px;">♚</span>
+      <span id="sit-title" style="font-family:'Nunito',sans-serif;font-weight:800;font-size:13px;color:#F0C040;flex:1;"></span>
+      <span id="sit-arrow" style="font-size:12px;color:#F0C040;font-weight:700;">▼</span>
     </div>
-    <button class="gen-btn" id="gen-btn" onclick="generatePosition()" disabled>⏳ Stockfish lädt…</button>
+    <div id="sit-body" style="padding:12px 14px;display:flex;flex-direction:column;gap:10px;">
+      <div id="sit-goals"></div>
+      <div id="sit-warnings" style="display:none;"></div>
+      <button onclick="toggleWarnings()" id="warn-btn" style="align-self:flex-start;padding:5px 12px;border-radius:8px;font-family:'Nunito',sans-serif;font-weight:800;font-size:11px;border:1.5px solid #e0ddd6;background:#f9f8f4;color:#888;cursor:pointer;">⚠️ Häufige Fehler zeigen</button>
+      <div id="sit-tip" style="font-size:12px;font-weight:700;color:#8B5E3C;background:#FFF9F0;border-radius:8px;padding:8px 10px;border-left:3px solid #F0C040;"></div>
+    </div>
   </div>
 
   <div class="board-outer" style="align-self:center;">
@@ -144,13 +145,6 @@ input[type=range]{flex:1;accent-color:#58CC02;}
     </div>
   </div>
 
-  <div class="pbar">
-    <div class="av av-y">Du</div>
-    <span class="pname" id="mctr" style="font-family:'Nunito',sans-serif;font-size:11px;font-weight:800;color:#aaa;letter-spacing:.06em;text-transform:uppercase;">ZUG 1</span>
-    <div id="turn-dot" style="width:6px;height:6px;border-radius:50%;background:#58CC02;box-shadow:0 0 0 2px #eaf7d8;"></div>
-    <span class="badge">Weiß</span>
-  </div>
-
   <div class="move-card" id="move-card">
     <div class="move-card-top">
       <div class="move-info" style="padding:10px 14px;">
@@ -161,6 +155,10 @@ input[type=range]{flex:1;accent-color:#58CC02;}
           <span class="cp-pill"><span class="cp-label">Bester Zug</span>&nbsp;<span class="cp-val" id="cp-best-move" style="color:#3d3d3a;font-size:12px;">—</span>&nbsp;<span class="cp-val" id="cp-best">—</span></span>
         </div>
       </div>
+      <div class="move-turn" style="display:flex;align-items:center;gap:9px;padding:7px 13px;border-left:1px solid #e8e6de;">
+        <div id="turn-dot" style="width:6px;height:6px;border-radius:50%;background:#ccc;box-shadow:none;animation:none;"></div>
+        <span class="mctr" id="mctr" style="font-family:'Nunito',sans-serif;font-size:11px;font-weight:800;color:#aaa;letter-spacing:.06em;text-transform:uppercase;">ZUG 1</span>
+      </div>
     </div>
     <button class="explain-btn" id="explain-btn" onclick="loadExplanation()" style="display:none">
       🦉 Tobold erklärt warum
@@ -168,26 +166,24 @@ input[type=range]{flex:1;accent-color:#58CC02;}
     <div class="explain-box" id="explain-box"></div>
   </div>
 
-  <div id="game-status" style="display:none;width:100%;padding:10px 14px;border-radius:12px;font-family:'Nunito',sans-serif;font-weight:800;font-size:14px;text-align:center;"></div>
-
-  <!-- Endgame situation panel -->
-  <div id="situation-panel" style="display:none;width:100%;background:#fff;border:1px solid #e8e6de;border-radius:14px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.06);">
-    <div style="display:flex;align-items:center;gap:8px;padding:10px 14px;background:#1a0e06;cursor:pointer;" onclick="toggleSituation()">
-      <span style="font-size:16px;">♚</span>
-      <span id="sit-title" style="font-family:'Nunito',sans-serif;font-weight:800;font-size:13px;color:#F0C040;flex:1;"></span>
-      <span id="sit-arrow" style="font-size:12px;color:#F0C040;font-weight:700;">▼</span>
-    </div>
-    <div id="sit-body" style="padding:12px 14px;display:flex;flex-direction:column;gap:10px;">
-      <div id="sit-goals"></div>
-      <div id="sit-warnings" style="display:none;"></div>
-      <button onclick="toggleWarnings()" id="warn-btn" style="align-self:flex-start;padding:5px 12px;border-radius:8px;font-family:'Nunito',sans-serif;font-weight:800;font-size:11px;border:1.5px solid #e0ddd6;background:#f9f8f4;color:#888;cursor:pointer;">⚠️ Häufige Fehler zeigen</button>
-      <div id="sit-tip" style="font-size:12px;font-weight:700;color:#8B5E3C;background:#FFF9F0;border-radius:8px;padding:8px 10px;border-left:3px solid #F0C040;"></div>
-    </div>
-  </div>
+  <!-- game status panel removed (requested) -->
 
   <div class="btnrow">
-    <button class="btn btnp" onclick="generatePosition()">🎲 Neue Stellung</button>
+    <button class="btn btnp" id="gen-btn" onclick="generatePosition()" disabled>⏳ Stockfish lädt…</button>
     <button class="btn btns" onclick="undoLast()">↩ Zurück</button>
+  </div>
+
+  <div class="setup" style="padding:12px 18px;">
+    <div class="setup-row">
+      <span class="setup-lbl">Bauern pro Seite:</span>
+      <div class="pawn-btns">
+        <button class="pb" onclick="setPawns(1)">1</button>
+        <button class="pb active" onclick="setPawns(2)">2</button>
+        <button class="pb" onclick="setPawns(3)">3</button>
+        <button class="pb" onclick="setPawns(4)">4</button>
+        <button class="pb" onclick="setPawns(5)">5</button>
+      </div>
+    </div>
   </div>
 
   <div class="ctrow">
@@ -343,11 +339,20 @@ function sfSearch(fen, depth, skill) {
 }
 
 function parseCPsideToMove(lines) {
+  // We encode "mate in X" into a synthetic CP value so we don't lose X.
+  // Sign: + = side-to-move gets mate, - = side-to-move gets mated.
+  // Magnitude: 9000 + X
+  var MATE_BASE = 9000;
   for (var i = lines.length - 1; i >= 0; i--) {
     var m = lines[i].match(/score cp (-?\d+)/);
     if (m) return parseInt(m[1]);
     var mm = lines[i].match(/score mate (-?\d+)/);
-    if (mm) return parseInt(mm[1]) > 0 ? 99999 : -99999;
+    if (mm) {
+      var mateRaw = parseInt(mm[1]); // e.g. 3 or -3
+      var x = Math.abs(mateRaw);
+      var sign = mateRaw > 0 ? 1 : -1;
+      return sign * (MATE_BASE + x);
+    }
   }
   return null;
 }
@@ -663,14 +668,17 @@ function handleClick(sq) {
 function setTurnDot(yourTurn) {
   var dot = document.getElementById('turn-dot');
   if (!dot) return;
+  var mctr = document.getElementById('mctr');
   if (yourTurn) {
     dot.style.background = '#58CC02';
     dot.style.boxShadow = '0 0 0 2px #eaf7d8';
     dot.style.animation = 'glow 1.4s ease-in-out infinite';
+    if (mctr) mctr.style.color = '#2D7A0A';
   } else {
     dot.style.background = '#ccc';
     dot.style.boxShadow = 'none';
     dot.style.animation = 'none';
+    if (mctr) mctr.style.color = '#aaa';
   }
 }
 
@@ -683,53 +691,111 @@ function afterMove(fenBefore, move) {
   // evalFull on fenAfter:  gives actual CP after player's move
   // Both use toWhiteCP internally so both are white-perspective
   evalFull(fenBefore, 14).then(function(sfBest) {
-    var cpBestPossible = sfBest ? sfBest.cp : 0;
+    var cpBeforeEval = sfBest ? sfBest.cp : 0;
+    var bestUci = sfBest ? sfBest.bestmove : null;
 
     evalFull(game.fen(), 14).then(function(sfAfter) {
-      var cpActual = sfAfter ? sfAfter.cp : 0;
-      var cpLoss = Math.max(0, cpBestPossible - cpActual);
+      var cpAfterActual = sfAfter ? sfAfter.cp : 0;
       var isBestMove = !sfBest || !sfBest.bestmove ||
         sfBest.bestmove.slice(0, 4) === (move.from + move.to);
 
-      setEval(cpActual);
+      setEval(cpAfterActual);
 
       var bestSAN = sfBest ? sfBest.bestSAN : null;
       var pvSAN   = sfBest ? sfBest.pvSAN   : [];
 
-      askClaudeForFeedback(
-        fenBefore, game.fen(), move.san, bestSAN,
-        cpBestPossible, cpActual,
-        cpActual - cpBestPossible, cpLoss,
-        isBestMove, pvSAN
-      );
-      // Tobold's reply (don't wait for Claude)
-      setTimeout(function() {
-        if (game.turn() === 'b' && !checkEnd()) {
-          sfSearch(game.fen(), 14, skillLevel).then(function(oscRes) {
-            if (oscRes && oscRes.bestmove && oscRes.bestmove !== '(none)') {
-              var from = oscRes.bestmove.slice(0, 2);
-              var to   = oscRes.bestmove.slice(2, 4);
-              var promo = oscRes.bestmove[4] || 'q';
-              var res = game.move({ from: from, to: to, promotion: promo });
-              if (res) {
-                lastMv = { from: from, to: to };
-                hist.push({ fen: game.fen() });
-                evalFull(game.fen(), 8).then(function(sfPost) {
-                  if (sfPost) setEval(sfPost.cp);
-                  renderBoard();
-                  updateSituation();
-                  checkEnd();
-                });
+      function scheduleTobold() {
+        // Important: start Stockfish search AFTER all additional evaluations are done.
+        // Otherwise we may send overlapping commands to the same Worker.
+        setTimeout(function() {
+          if (game.turn() === 'b' && !checkEnd()) {
+            sfSearch(game.fen(), 14, skillLevel).then(function(oscRes) {
+              if (oscRes && oscRes.bestmove && oscRes.bestmove !== '(none)') {
+                var from = oscRes.bestmove.slice(0, 2);
+                var to   = oscRes.bestmove.slice(2, 4);
+                var promo = oscRes.bestmove[4] || 'q';
+                var res = game.move({ from: from, to: to, promotion: promo });
+                if (res) {
+                  lastMv = { from: from, to: to };
+                  hist.push({ fen: game.fen() });
+                  evalFull(game.fen(), 8).then(function(sfPost) {
+                    if (sfPost) setEval(sfPost.cp);
+                    renderBoard();
+                    updateSituation();
+                    checkEnd();
+                  });
+                }
               }
-            }
+              busy = false;
+              setTurnDot(true);
+            });
+          } else {
             busy = false;
             setTurnDot(true);
-          });
-        } else {
-          busy = false;
-          setTurnDot(true);
+          }
+        }, 200);
+      }
+
+      // Compute evaluation after the Engine's best move
+      if (!bestUci) {
+        var cpBestAfterEval = cpBeforeEval;
+        var cpLoss = Math.max(0, cpBestAfterEval - cpAfterActual);
+        askClaudeForFeedback(
+          fenBefore, game.fen(), move.san, bestSAN,
+          cpBeforeEval, cpAfterActual, cpBestAfterEval,
+          cpAfterActual - cpBestAfterEval, cpLoss,
+          isBestMove, pvSAN
+        );
+        scheduleTobold();
+      } else {
+        var gBest = null;
+        var fenAfterBest = null;
+        try {
+          gBest = new Chess(fenBefore);
+          var fromB = bestUci.slice(0, 2);
+          var toB = bestUci.slice(2, 4);
+          var moB = { from: fromB, to: toB };
+          if (bestUci.length >= 5 && bestUci[4]) {
+            moB.promotion = String(bestUci[4]).toLowerCase();
+          }
+          var resB = gBest.move(moB);
+          if (resB) fenAfterBest = gBest.fen();
+        } catch (e) {}
+
+        // Fallback: if applying UCI failed, try applying the move as SAN.
+        // This prevents mismatches between the displayed "Bester Zug" and its CP value.
+        if (!fenAfterBest && bestSAN && bestSAN !== '—') {
+          try {
+            var gBest2 = new Chess(fenBefore);
+            var resSAN = gBest2.move(bestSAN);
+            if (resSAN) fenAfterBest = gBest2.fen();
+          } catch (e) {}
         }
-      }, 200);
+
+        if (!fenAfterBest) {
+          var cpBestAfterEval = cpBeforeEval;
+          var cpLoss = Math.max(0, cpBestAfterEval - cpAfterActual);
+          askClaudeForFeedback(
+            fenBefore, game.fen(), move.san, bestSAN,
+            cpBeforeEval, cpAfterActual, cpBestAfterEval,
+            cpAfterActual - cpBestAfterEval, cpLoss,
+            isBestMove, pvSAN
+          );
+          scheduleTobold();
+        } else {
+          evalPosition(fenAfterBest, 14).then(function(cpBestAfterEval) {
+            if (cpBestAfterEval === null || cpBestAfterEval === undefined) cpBestAfterEval = cpBeforeEval;
+            var cpLoss = Math.max(0, cpBestAfterEval - cpAfterActual);
+            askClaudeForFeedback(
+              fenBefore, game.fen(), move.san, bestSAN,
+              cpBeforeEval, cpAfterActual, cpBestAfterEval,
+              cpAfterActual - cpBestAfterEval, cpLoss,
+              isBestMove, pvSAN
+            );
+            scheduleTobold();
+          });
+        }
+      }
     });
   });
 }
@@ -759,7 +825,12 @@ function classifyMove(cpLoss, isBestMove) {
 
 function cpStr(cp) {
   if (cp === null || cp === undefined) return '—';
-  if (Math.abs(cp) > 9000) return cp > 0 ? '+M' : '-M';
+  var MATE_BASE = 9000;
+  if (Math.abs(cp) > MATE_BASE) {
+    var x = Math.abs(cp) - MATE_BASE;
+    if (!x || x < 1) return cp > 0 ? '+M' : '-M';
+    return (cp > 0 ? '+' : '-') + 'M(' + x + ')';
+  }
   return (cp >= 0 ? '+' : '') + (cp / 100).toFixed(2);
 }
 
@@ -815,9 +886,8 @@ function setMoveRating(ratingKey, cpPlayer, cpBestMove, playerMove, bestMove) {
 }
 
 function setGameStatus(msg, type) {
-  var el = document.getElementById('game-status');
-  if (!msg) { el.style.display = 'none'; return; }
-  el.style.display = 'block';
+  // Panel removed; keep this as a no-op to avoid UI showing again.
+  return;
   var bg = type === 'win'  ? '#eaf7d8' :
            type === 'lose' ? '#fde8e8' :
            type === 'draw' ? '#fff3cd' : '#f5f4ef';
@@ -904,7 +974,7 @@ function loadExplanation() {
     });
 }
 
-function askClaudeForFeedback(fen, fenAfter, playerMove, bestMove, cpBest, cpAfter, delta, cpLoss, isBestMove, pvSAN) {
+function askClaudeForFeedback(fen, fenAfter, playerMove, bestMove, cpBeforeEval, cpAfterActual, cpBestAfterEval, delta, cpLoss, isBestMove, pvSAN) {
   // Compute legal moves for context
   var legalBefore = [], legalAfter = [];
   try { legalBefore = new Chess(fen).moves(); } catch(e) {}
@@ -914,13 +984,13 @@ function askClaudeForFeedback(fen, fenAfter, playerMove, bestMove, cpBest, cpAft
   lastMoveContext = {
     fen: fen, fenAfter: fenAfter,
     playerMove: playerMove, bestMove: bestMove,
-    cpBefore: cpBest, cpAfter: cpAfter,
+    cpBefore: cpBeforeEval, cpAfter: cpAfterActual,
     isBestMove: isBestMove, pvSAN: pvSAN,
     legalBefore: legalBefore, legalAfter: legalAfter
   };
 
   var ratingKey = classifyMove(cpLoss, isBestMove);
-  setMoveRating(ratingKey, cpAfter, cpBest, playerMove, bestMove);
+  setMoveRating(ratingKey, cpAfterActual, cpBestAfterEval, playerMove, bestMove);
 }
 
 // ── EVAL BAR ──────────────────────────────────────────
@@ -936,9 +1006,21 @@ function setEval(cp) {
   document.getElementById('evalblk-b').style.flex = bFlex;
   document.getElementById('evalblk-w').style.flex = wFlex;
 
-  var absVal = isMate ? 'M' : (Math.abs(cp) / 100).toFixed(2);
-  document.getElementById('evallbl-w').textContent = cp >= 0 ? '+' + absVal : (cp === 0 ? '0.00' : '—');
-  document.getElementById('evallbl-b').textContent = cp <= 0 ? (cp === 0 ? '0.00' : '+' + (Math.abs(cp)/100).toFixed(2)) : '—';
+  var absVal;
+  if (isMate) {
+    var MATE_BASE = 9000;
+    var x = Math.abs(cp) - MATE_BASE;
+    absVal = x && x >= 1 ? 'MATT in ' + x : 'MATT';
+  } else {
+    absVal = (Math.abs(cp) / 100).toFixed(2);
+  }
+  if (isMate) {
+    document.getElementById('evallbl-w').textContent = cp > 0 ? absVal : '—';
+    document.getElementById('evallbl-b').textContent = cp < 0 ? absVal : '—';
+  } else {
+    document.getElementById('evallbl-w').textContent = cp >= 0 ? '+' + absVal : (cp === 0 ? '0.00' : '—');
+    document.getElementById('evallbl-b').textContent = cp <= 0 ? (cp === 0 ? '0.00' : '+' + (Math.abs(cp)/100).toFixed(2)) : '—';
+  }
 
   // Abkürzen der Labels, wenn der jeweilige Block sehr klein ist
   var bLbl = document.querySelector('#evalblk-b .evalblk-label');
