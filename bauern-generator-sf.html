@@ -38,12 +38,14 @@ h1 span{color:#58CC02;}
 .engbadge.error{background:#f8d7da;color:#721c24;}
 .mctr{font-size:12px;font-weight:700;color:#aaa;}
 .board-outer{border-radius:14px;overflow:hidden;box-shadow:0 10px 36px rgba(0,0,0,.22);border:4px solid #6B3F1A;display:inline-block;}
-.board-frame{background:linear-gradient(145deg,#9B6B3C,#7A4E24);padding:14px;}
+.board-frame{background:linear-gradient(145deg,#9B6B3C,#7A4E24);padding:14px;position:relative;}
+.board-labels-left{position:absolute;left:0;top:14px;width:14px;display:flex;flex-direction:column;}
+.board-labels-bottom{position:absolute;bottom:0;left:14px;height:14px;display:flex;}
 .board-inner{display:grid;grid-template-columns:12px 1fr;grid-template-rows:1fr 12px;}
 .rnks{display:flex;flex-direction:column;padding-right:3px;}
-.rl{height:46px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:900;color:rgba(255,255,255,.5);}
+.rl{height:46px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:900;color:rgba(255,255,255,.5);width:14px;}
 .frow{display:flex;padding-top:3px;margin-left:0;}
-.fl{width:46px;text-align:center;font-size:9px;font-weight:900;color:rgba(255,255,255,.5);}
+.fl{width:46px;text-align:center;font-size:9px;font-weight:900;color:rgba(255,255,255,.5);line-height:14px;}
 .bmid{display:flex;}
 #board{display:grid;grid-template-columns:repeat(8,46px);grid-template-rows:repeat(8,46px);border-radius:3px;overflow:hidden;}
 .sq{width:46px;height:46px;display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative;transition:filter .1s;}
@@ -87,6 +89,7 @@ h1 span{color:#58CC02;}
 .dp{width:7px;height:7px;border-radius:50%;background:#bbb;animation:pulse 1.2s ease-in-out infinite;}
 .dp:nth-child(2){animation-delay:.2s;}.dp:nth-child(3){animation-delay:.4s;}
 @keyframes pulse{0%,80%,100%{opacity:.3;transform:scale(.8);}40%{opacity:1;transform:scale(1.1);}}
+@keyframes glow{0%,100%{box-shadow:0 0 0 2px #eaf7d8;}50%{box-shadow:0 0 0 4px #b5eda0;}}
 .btnrow{display:flex;gap:9px;width:100%;}
 .btn{flex:1;padding:10px;border-radius:12px;font-family:'Nunito',sans-serif;font-weight:800;font-size:13px;border:none;cursor:pointer;transition:transform .1s;}
 .btn:active{transform:scale(.96);}
@@ -118,20 +121,21 @@ input[type=range]{flex:1;accent-color:#58CC02;}
   </div>
 
   <div class="pbar">
-    <div class="av av-o">O</div>
-    <span class="pname">Tobold</span>
-    <span class="badge">Schwarz</span>
+    <div style="width:22px;height:22px;border-radius:6px;background:#e8e6de;border:1.5px solid #c8b89a;display:flex;align-items:center;justify-content:center;font-size:13px;line-height:1;">♙</div>
+    <span style="font-family:'Nunito',sans-serif;font-size:12px;font-weight:900;color:#3d3d3a;letter-spacing:.02em;">Du · Weiß</span>
     <span class="engbadge loading" id="engbadge">⏳ SF18…</span>
-    <span class="mctr" id="mctr">Zug 1</span>
+    <span class="mctr" id="mctr" style="font-family:'Nunito',sans-serif;font-size:11px;font-weight:800;color:#aaa;letter-spacing:.06em;text-transform:uppercase;">Zug 1</span>
+    <div id="turn-dot" style="width:6px;height:6px;border-radius:50%;background:#58CC02;box-shadow:0 0 0 2px #eaf7d8;"></div>
   </div>
 
   <div class="board-outer" style="align-self:center;">
     <div class="board-frame">
-      <div class="board-inner">
-        <div class="rnks"><span class="rl">8</span><span class="rl">7</span><span class="rl">6</span><span class="rl">5</span><span class="rl">4</span><span class="rl">3</span><span class="rl">2</span><span class="rl">1</span></div>
-        <div id="board"></div>
-        <div></div>
-        <div class="frow"><span class="fl">a</span><span class="fl">b</span><span class="fl">c</span><span class="fl">d</span><span class="fl">e</span><span class="fl">f</span><span class="fl">g</span><span class="fl">h</span></div>
+      <div class="board-labels-left">
+        <span class="rl">8</span><span class="rl">7</span><span class="rl">6</span><span class="rl">5</span><span class="rl">4</span><span class="rl">3</span><span class="rl">2</span><span class="rl">1</span>
+      </div>
+      <div id="board"></div>
+      <div class="board-labels-bottom">
+        <span class="fl">a</span><span class="fl">b</span><span class="fl">c</span><span class="fl">d</span><span class="fl">e</span><span class="fl">f</span><span class="fl">g</span><span class="fl">h</span>
       </div>
     </div>
   </div>
@@ -596,6 +600,7 @@ function startGame(fen, initialCp) {
   ];
   var tip = tips[Math.floor(Math.random() * tips.length)];
   setGameStatus('', '');
+  setTurnDot(true);
 }
 
 // ── BOARD RENDER ──────────────────────────────────────
@@ -668,9 +673,24 @@ function handleClick(sq) {
   if (p && p.color === 'w') { sel = sq; renderBoard(); }
 }
 
+function setTurnDot(yourTurn) {
+  var dot = document.getElementById('turn-dot');
+  if (!dot) return;
+  if (yourTurn) {
+    dot.style.background = '#58CC02';
+    dot.style.boxShadow = '0 0 0 2px #eaf7d8';
+    dot.style.animation = 'glow 1.4s ease-in-out infinite';
+  } else {
+    dot.style.background = '#ccc';
+    dot.style.boxShadow = 'none';
+    dot.style.animation = 'none';
+  }
+}
+
 // ── AFTER PLAYER MOVE ─────────────────────────────────
 function afterMove(fenBefore, move) {
   busy = true;
+  setTurnDot(false);
 
   // evalFull on fenBefore: gives best possible CP and best move from this position
   // evalFull on fenAfter:  gives actual CP after player's move
@@ -716,9 +736,11 @@ function afterMove(fenBefore, move) {
               }
             }
             busy = false;
+            setTurnDot(true);
           });
         } else {
           busy = false;
+          setTurnDot(true);
         }
       }, 200);
     });
@@ -970,6 +992,7 @@ function undoLast() {
   resetRatingCard();
   updateSituation();
   evalPosition(game.fen(), 10).then(function(cp) { if (cp !== null) setEval(cp); });
+  setTurnDot(true);
 }
 
 
