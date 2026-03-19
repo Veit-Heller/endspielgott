@@ -146,10 +146,9 @@ input[type=range]{flex:1;accent-color:#58CC02;}
 
   <div class="pbar">
     <div class="av av-y">Du</div>
-    <span class="pname" id="mctr" style="font-family:'Nunito',sans-serif;font-size:11px;font-weight:800;color:#aaa;letter-spacing:.06em;text-transform:uppercase;">Zug 1</span>
+    <span class="pname" id="mctr" style="font-family:'Nunito',sans-serif;font-size:11px;font-weight:800;color:#aaa;letter-spacing:.06em;text-transform:uppercase;">ZUG 1</span>
     <div id="turn-dot" style="width:6px;height:6px;border-radius:50%;background:#58CC02;box-shadow:0 0 0 2px #eaf7d8;"></div>
     <span class="badge">Weiß</span>
-    <span class="engbadge loading" id="engbadge">⏳ SF18…</span>
   </div>
 
   <div class="move-card" id="move-card">
@@ -299,8 +298,6 @@ function initStockfish() {
       if (line === 'uciok') { sf.postMessage('isready'); return; }
       if (line === 'readyok') {
         sfReady = true;
-        document.getElementById('engbadge').textContent = '✓ Stockfish 18';
-        document.getElementById('engbadge').className = 'engbadge ready';
         var btn = document.getElementById('gen-btn');
         btn.textContent = '🎲 Neue Stellung generieren';
         btn.disabled = false;
@@ -321,8 +318,6 @@ function initStockfish() {
       }
     };
     sf.onerror = function() {
-      document.getElementById('engbadge').textContent = '✗ Kein Worker';
-      document.getElementById('engbadge').className = 'engbadge error';
       var btn = document.getElementById('gen-btn');
       btn.textContent = '🎲 Neue Stellung generieren';
       btn.disabled = false;
@@ -330,8 +325,6 @@ function initStockfish() {
     };
     sf.postMessage('uci');
   } catch(e) {
-    document.getElementById('engbadge').textContent = '✗ Fehler';
-    document.getElementById('engbadge').className = 'engbadge error';
   }
 }
 
@@ -583,7 +576,7 @@ function startGame(fen, initialCp) {
   setGameStatus('', '');
   resetRatingCard();
   updateSituation();
-  document.getElementById('mctr').textContent = 'Zug 1';
+  document.getElementById('mctr').textContent = 'ZUG 1';
   var cpStr = (initialCp / 100).toFixed(2);
   var tips = [
     'Aktiviere deinen König — er ist im Endspiel deine stärkste Figur!',
@@ -654,7 +647,7 @@ function handleClick(sq) {
         sel = null;
         mvCnt++;
         hist.push({ fen: game.fen() });
-        document.getElementById('mctr').textContent = 'Zug ' + mvCnt;
+        document.getElementById('mctr').textContent = 'ZUG ' + mvCnt;
         renderBoard();
         updateSituation();
         if (!checkEnd()) afterMove(fenBefore, res);
@@ -980,7 +973,7 @@ function undoLast() {
   game = new Chess(hist[hist.length - 1].fen);
   sel = null; lastMv = null; busy = false;
   mvCnt = Math.max(1, mvCnt - 1);
-  document.getElementById('mctr').textContent = 'Zug ' + mvCnt;
+  document.getElementById('mctr').textContent = 'ZUG ' + mvCnt;
   renderBoard();
   setGameStatus('', '');
   resetRatingCard();
