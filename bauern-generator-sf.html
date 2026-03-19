@@ -120,14 +120,6 @@ input[type=range]{flex:1;accent-color:#58CC02;}
     <button class="gen-btn" id="gen-btn" onclick="generatePosition()" disabled>⏳ Stockfish lädt…</button>
   </div>
 
-  <div class="pbar">
-    <div style="width:22px;height:22px;border-radius:6px;background:#e8e6de;border:1.5px solid #c8b89a;display:flex;align-items:center;justify-content:center;font-size:13px;line-height:1;">♙</div>
-    <span style="font-family:'Nunito',sans-serif;font-size:12px;font-weight:900;color:#3d3d3a;letter-spacing:.02em;">Du · Weiß</span>
-    <span class="engbadge loading" id="engbadge">⏳ SF18…</span>
-    <span class="mctr" id="mctr" style="font-family:'Nunito',sans-serif;font-size:11px;font-weight:800;color:#aaa;letter-spacing:.06em;text-transform:uppercase;">Zug 1</span>
-    <div id="turn-dot" style="width:6px;height:6px;border-radius:50%;background:#58CC02;box-shadow:0 0 0 2px #eaf7d8;"></div>
-  </div>
-
   <div class="board-outer" style="align-self:center;">
     <div class="board-frame">
       <div class="board-labels-left">
@@ -154,8 +146,10 @@ input[type=range]{flex:1;accent-color:#58CC02;}
 
   <div class="pbar">
     <div class="av av-y">Du</div>
-    <span class="pname">Spieler</span>
+    <span class="pname" id="mctr" style="font-family:'Nunito',sans-serif;font-size:11px;font-weight:800;color:#aaa;letter-spacing:.06em;text-transform:uppercase;">Zug 1</span>
+    <div id="turn-dot" style="width:6px;height:6px;border-radius:50%;background:#58CC02;box-shadow:0 0 0 2px #eaf7d8;"></div>
     <span class="badge">Weiß</span>
+    <span class="engbadge loading" id="engbadge">⏳ SF18…</span>
   </div>
 
   <div class="move-card" id="move-card">
