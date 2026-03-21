@@ -152,6 +152,7 @@ input[type=range]{flex:1;accent-color:#8B5E3C;}
           <span class="cp-arrow">→</span>
           <span class="cp-pill"><span class="cp-label">Bester Zug</span>&nbsp;<span class="cp-val" id="cp-best-move" style="color:#3d3d3a;font-size:12px;">—</span>&nbsp;<span class="cp-val" id="cp-best">—</span></span>
         </div>
+        <div id="eval-note" style="display:none;font-size:11px;font-weight:600;color:#7a6f62;line-height:1.4;margin-top:6px;max-width:520px;"></div>
       </div>
       <div class="move-turn" style="display:flex;align-items:center;gap:9px;padding:7px 13px;border-left:1px solid #e8e6de;">
         <div id="turn-dot" style="width:6px;height:6px;border-radius:50%;background:#ccc;box-shadow:none;animation:none;"></div>
@@ -720,11 +721,12 @@ function afterMove(fenBefore, move) {
   // evalFull on fenBefore: gives best possible CP and best move from this position
   // evalFull on fenAfter:  gives actual CP after player's move
   // Both use toWhiteCP internally so both are white-perspective
-  evalFull(fenBefore, 14).then(function(sfBest) {
+  var MOVE_ANALYSIS_DEPTH = 16;
+  evalFull(fenBefore, MOVE_ANALYSIS_DEPTH).then(function(sfBest) {
     var cpBeforeEval = sfBest ? sfBest.cp : 0;
     var bestUci = sfBest ? sfBest.bestmove : null;
 
-    evalFull(game.fen(), 14).then(function(sfAfter) {
+    evalFull(game.fen(), MOVE_ANALYSIS_DEPTH).then(function(sfAfter) {
       var cpAfterActual = sfAfter ? sfAfter.cp : 0;
       var isBestMove = !sfBest || !sfBest.bestmove ||
         sfBest.bestmove.slice(0, 4) === (move.from + move.to);
@@ -813,7 +815,7 @@ function afterMove(fenBefore, move) {
           );
           scheduleTobold();
         } else {
-          evalPosition(fenAfterBest, 14).then(function(cpBestAfterEval) {
+          evalPosition(fenAfterBest, MOVE_ANALYSIS_DEPTH).then(function(cpBestAfterEval) {
             if (cpBestAfterEval === null || cpBestAfterEval === undefined) cpBestAfterEval = cpBeforeEval;
             var cpLoss = Math.max(0, cpBestAfterEval - cpAfterActual);
             askClaudeForFeedback(
@@ -875,12 +877,14 @@ function resetRatingCard() {
   document.getElementById('cp-best-move').style.color = '#3d3d3a';
   document.getElementById('cp-best').textContent = '—';
   document.getElementById('cp-best').className = 'cp-val';
+  var en = document.getElementById('eval-note');
+  if (en) { en.style.display = 'none'; en.textContent = ''; }
   document.getElementById('explain-btn').style.display = 'none';
   document.getElementById('explain-box').className = 'explain-box';
   document.getElementById('explain-box').innerHTML = '';
 }
 
-function setMoveRating(ratingKey, cpPlayer, cpBestMove, playerMove, bestMove) {
+function setMoveRating(ratingKey, cpPlayer, cpBestMove, playerMove, bestMove, evalNote) {
   var r = RATINGS[ratingKey] || RATINGS.ok;
   var label = document.getElementById('rating-label');
   var cpPl  = document.getElementById('cp-player');
@@ -889,6 +893,7 @@ function setMoveRating(ratingKey, cpPlayer, cpBestMove, playerMove, bestMove) {
   var moveBst = document.getElementById('cp-best-move');
   var btn   = document.getElementById('explain-btn');
   var box   = document.getElementById('explain-box');
+  var noteEl = document.getElementById('eval-note');
 
   label.className = 'rating-label ' + r.cls;
   label.textContent = r.icon + ' ' + r.label;
@@ -913,6 +918,16 @@ function setMoveRating(ratingKey, cpPlayer, cpBestMove, playerMove, bestMove) {
   btn.textContent = '🦉 Tobold erklärt warum';
   box.className = 'explain-box';
   box.innerHTML = '';
+
+  if (noteEl) {
+    if (evalNote) {
+      noteEl.style.display = 'block';
+      noteEl.textContent = evalNote;
+    } else {
+      noteEl.style.display = 'none';
+      noteEl.textContent = '';
+    }
+  }
 }
 
 function setGameStatus(msg, type) {
@@ -1094,7 +1109,15 @@ function askClaudeForFeedback(fen, fenAfter, playerMove, playerUci, bestMove, be
   };
 
   var ratingKey = classifyMove(cpLoss, isBestMove);
-  setMoveRating(ratingKey, cpAfterActual, cpBestAfterEval, playerMove, bestMove);
+  // Wenn die Nachstellung nach dem Spielerzug höher bewertet ist als nach dem Wurzel-Bestzug,
+  // wirken die Zahlen widersprüchlich — typisch bei begrenzter Suchtiefe / Engine-Rauschen.
+  var evalNote = '';
+  if (!isBestMove && cpAfterActual != null && cpBestAfterEval != null &&
+      cpAfterActual > cpBestAfterEval + 20) {
+    evalNote = 'Hinweis: Deine Stellung wird hier höher bewertet als die nach dem Engine-Zug. ' +
+      '„Bester Zug“ kommt von der Suche an der Wurzel, die Zahlen daneben von je einer kurzen Nachanalyse — das kann bei Tiefe 16 kurz auseinanderlaufen.';
+  }
+  setMoveRating(ratingKey, cpAfterActual, cpBestAfterEval, playerMove, bestMove, evalNote);
 }
 
 // ── EVAL BAR ──────────────────────────────────────────
