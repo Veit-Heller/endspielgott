@@ -103,6 +103,26 @@ h1 span{color:#6B3F1A;}
 .dp:nth-child(2){animation-delay:.2s;}.dp:nth-child(3){animation-delay:.4s;}
 @keyframes pulse{0%,80%,100%{opacity:.3;transform:scale(.8);}40%{opacity:1;transform:scale(1.1);}}
 @keyframes glow{0%,100%{box-shadow:0 0 0 2px #f3dfb8;}50%{box-shadow:0 0 0 4px #ddb56a;}}
+/* Figuren „wandern“ während neue Stellung gesucht wird */
+@keyframes pcWobble{
+  0%,100%{transform:translate(0,0) rotate(0deg);}
+  18%{transform:translate(2px,-4px) rotate(-2.5deg);}
+  36%{transform:translate(-3px,2px) rotate(2deg);}
+  54%{transform:translate(2px,3px) rotate(-1.5deg);}
+  72%{transform:translate(-2px,-2px) rotate(1.5deg);}
+}
+#board.board-shuffle{pointer-events:none;}
+#board.board-shuffle .sq{cursor:wait!important;}
+#board.board-shuffle .sq svg{
+  display:block;
+  animation:pcWobble 2.4s ease-in-out infinite;
+  transform-origin:50% 55%;
+  will-change:transform;
+}
+#board.board-shuffle .sq:nth-child(4n) svg{animation-delay:-0.35s;}
+#board.board-shuffle .sq:nth-child(4n+1) svg{animation-delay:-0.9s;}
+#board.board-shuffle .sq:nth-child(4n+2) svg{animation-delay:-1.45s;}
+#board.board-shuffle .sq:nth-child(4n+3) svg{animation-delay:-2s;}
 .btnrow{display:flex;gap:9px;width:100%;}
 .btn{flex:1;padding:10px;border-radius:12px;font-family:'Nunito',sans-serif;font-weight:800;font-size:13px;border:none;cursor:pointer;transition:transform .1s;}
 .btn:active{transform:scale(.96);}
@@ -549,11 +569,46 @@ function setPawns(n) {
 
 // ── POSITION GENERATOR ────────────────────────────────
 var generating = false;
+var boardShuffleTimer = null;
 // Wie viele zufällige Stellungen maximal probiert werden, bis eine in den CP-Bereich passt.
 // (Früher: 40 — oft zu wenig bei „Schwer“ oder vielen Bauern.)
 var MAX_POSITION_ATTEMPTS = 800;
 // Stockfish-Tiefe beim Filtern zufälliger Stellungen (höher = genauer, aber langsamer pro Versuch).
 var GENERATOR_STOCKFISH_DEPTH = 14;
+
+function tickBoardShuffle() {
+  if (!generating) return;
+  var tries = 0;
+  while (tries < 25) {
+    tries++;
+    var fen = buildFen(numPawns);
+    if (!fen) continue;
+    var g = new Chess(fen);
+    if (!g || g.moves().length === 0 || g.in_check()) continue;
+    if (!kingsWellSeparated(g)) continue;
+    renderBoard(g);
+    return;
+  }
+}
+
+function startBoardShuffleAnim() {
+  stopBoardShuffleAnim();
+  var b = document.getElementById('board');
+  if (b) {
+    b.classList.add('board-shuffle');
+    tickBoardShuffle();
+    boardShuffleTimer = setInterval(tickBoardShuffle, 340);
+  }
+}
+
+function stopBoardShuffleAnim() {
+  if (boardShuffleTimer) {
+    clearInterval(boardShuffleTimer);
+    boardShuffleTimer = null;
+  }
+  var b = document.getElementById('board');
+  if (b) b.classList.remove('board-shuffle');
+}
 
 function generatePosition() {
   if (!sfReady || generating) return;
@@ -563,16 +618,19 @@ function generatePosition() {
   btn.textContent = '⏳ Suche Stellung…';
   var range = DIFF_RANGES[difficulty] || DIFF_RANGES[2];
   setGameStatus('Suche ' + DIFF_LABELS[difficulty] + '-Stellung (' + (range[0]/100).toFixed(2) + ' bis +' + (range[1]/100).toFixed(2) + ')…', '');
+  startBoardShuffleAnim();
   tryNextPosition(0);
 }
 
 function tryNextPosition(attempt) {
   if (attempt >= MAX_POSITION_ATTEMPTS) {
+    stopBoardShuffleAnim();
     setGameStatus('Keine passende Stellung nach ' + MAX_POSITION_ATTEMPTS + ' Versuchen — Schwierigkeit lockern oder erneut klicken.', '');
     var btn = document.getElementById('gen-btn');
     btn.disabled = false;
     btn.textContent = '🎲 Neue Stellung generieren';
     generating = false;
+    if (game) renderBoard();
     return;
   }
   var fen = buildFen(numPawns);
@@ -593,6 +651,7 @@ function tryNextPosition(attempt) {
       tryNextPosition(attempt + 1);
       return;
     }
+    stopBoardShuffleAnim();
     startGame(fen, cp);
     var btn = document.getElementById('gen-btn');
     btn.disabled = false;
@@ -709,19 +768,26 @@ function startGame(fen, initialCp) {
 function rc2sq(r, c) { return 'abcdefgh'[c] + (8 - r); }
 function getEl(sq) { return document.querySelector('[data-sq="' + sq + '"]'); }
 
-function renderBoard() {
-  if (!game) return;
+// previewChess: wenn gesetzt, nur Vorschau (z. B. beim Mischen) — sonst globales game
+function renderBoard(previewChess) {
+  var chessRef = previewChess || game;
+  if (!chessRef) return;
+  var isPreview = !!previewChess;
   var el = document.getElementById('board');
   el.innerHTML = '';
   for (var r = 0; r < 8; r++) {
     for (var c = 0; c < 8; c++) {
       var sq = rc2sq(r, c);
-      var p = game.get(sq);
+      var p = chessRef.get(sq);
       var div = document.createElement('div');
       div.className = 'sq ' + ((r + c) % 2 === 0 ? 'lt' : 'dk');
-      if (lastMv && (lastMv.from === sq || lastMv.to === sq)) div.classList.add('lm');
+      if (!isPreview && lastMv && (lastMv.from === sq || lastMv.to === sq)) div.classList.add('lm');
       div.dataset.sq = sq;
-      div.onclick = (function(s) { return function() { handleClick(s); }; })(sq);
+      if (isPreview) {
+        div.onclick = function(e) { e.preventDefault(); e.stopPropagation(); };
+      } else {
+        div.onclick = (function(s) { return function() { handleClick(s); }; })(sq);
+      }
       if (p) {
         var key = (p.color === 'w' ? 'w' : 'b') + p.type.toUpperCase();
         if (PSVG[key]) div.innerHTML = PSVG[key]();
@@ -729,7 +795,7 @@ function renderBoard() {
       el.appendChild(div);
     }
   }
-  if (sel) {
+  if (!isPreview && sel) {
     var selEl = getEl(sel);
     if (selEl) selEl.classList.add('sel');
     var moves = game.moves({ square: sel, verbose: true });
@@ -746,7 +812,7 @@ function renderBoard() {
 
 // ── CLICK ─────────────────────────────────────────────
 function handleClick(sq) {
-  if (!game || game.turn() !== 'w' || busy) return;
+  if (!game || game.turn() !== 'w' || busy || generating) return;
   var p = game.get(sq);
   if (sel) {
     var moves = game.moves({ square: sel, verbose: true });
