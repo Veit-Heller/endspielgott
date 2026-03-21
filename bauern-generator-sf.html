@@ -67,6 +67,17 @@ h1 span{color:#58CC02;}
 .evalblk-b .evalblk-score{color:#F0C040;}
 .evalblk-w .evalblk-score{color:#3d3d3a;text-align:right;}
 .evaldivider{width:3px;background:#fff;border-radius:2px;flex-shrink:0;align-self:stretch;}
+.evalrow{position:relative;overflow:hidden;border-radius:10px;}
+.evalrow.outcome-white-win,.evalrow.outcome-black-win{gap:0;}
+.evalrow.outcome-white-win .evalblk-b{flex:0 !important;opacity:.08;transform:scale(.98);}
+.evalrow.outcome-white-win .evalblk-w{flex:100 !important;animation:evalWinnerExpand .8s cubic-bezier(.2,.8,.2,1);}
+.evalrow.outcome-black-win .evalblk-w{flex:0 !important;opacity:.08;transform:scale(.98);}
+.evalrow.outcome-black-win .evalblk-b{flex:100 !important;animation:evalWinnerExpand .8s cubic-bezier(.2,.8,.2,1);}
+.evalrow.outcome-white-win .evaldivider,.evalrow.outcome-black-win .evaldivider{width:0;opacity:0;}
+.evalrow.outcome-draw .evalblk-b,.evalrow.outcome-draw .evalblk-w{flex:50 !important;animation:evalDrawPulse 1.2s ease-in-out infinite;}
+.evalrow.outcome-draw .evaldivider{background:#fff;width:3px;}
+@keyframes evalWinnerExpand{0%{transform:scale(.95);filter:saturate(.7);}60%{transform:scale(1.02);}100%{transform:scale(1);filter:saturate(1);}}
+@keyframes evalDrawPulse{0%,100%{filter:brightness(1);}50%{filter:brightness(1.08);}}
 /* ── Move rating card ── */
 .move-card{width:100%;background:#fff;border:1px solid #e8e6de;border-radius:14px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.06);}
 .move-card-top{display:flex;align-items:center;gap:0;padding:0;}
@@ -575,12 +586,24 @@ function shuffled8() {
 
 // ── GAME STATE ────────────────────────────────────────
 var game = null, sel = null, lastMv = null, mvCnt = 1, hist = [], busy = false;
+var evalOutcome = null; // null | 'white-win' | 'black-win' | 'draw'
+
+function setEvalOutcome(outcome) {
+  evalOutcome = outcome;
+  var row = document.querySelector('.evalrow');
+  if (!row) return;
+  row.classList.remove('outcome-white-win', 'outcome-black-win', 'outcome-draw');
+  if (outcome === 'white-win') row.classList.add('outcome-white-win');
+  if (outcome === 'black-win') row.classList.add('outcome-black-win');
+  if (outcome === 'draw') row.classList.add('outcome-draw');
+}
 
 function startGame(fen, initialCp) {
   game = new Chess(fen);
   sel = null; lastMv = null; mvCnt = 1;
   hist = [{ fen: fen }];
   busy = false;
+  setEvalOutcome(null);
   renderBoard();
   setEval(initialCp);
   setGameStatus('', '');
@@ -1002,6 +1025,42 @@ function askClaudeForFeedback(fen, fenAfter, playerMove, bestMove, cpBeforeEval,
 // cp always from white's perspective: + = white better, - = black better
 function setEval(cp) {
   if (cp === null || cp === undefined) return;
+  if (evalOutcome) {
+    if (evalOutcome === 'white-win') {
+      document.getElementById('evalblk-b').style.flex = 0;
+      document.getElementById('evalblk-w').style.flex = 100;
+      document.getElementById('evallbl-w').textContent = 'SCHACHMATT';
+      document.getElementById('evallbl-b').textContent = '—';
+      var bLblW = document.querySelector('#evalblk-b .evalblk-label');
+      var wLblW = document.querySelector('#evalblk-w .evalblk-label');
+      if (bLblW) bLblW.textContent = 'Schwarz';
+      if (wLblW) wLblW.textContent = 'Weiß gewinnt';
+      return;
+    }
+    if (evalOutcome === 'black-win') {
+      document.getElementById('evalblk-b').style.flex = 100;
+      document.getElementById('evalblk-w').style.flex = 0;
+      document.getElementById('evallbl-b').textContent = 'SCHACHMATT';
+      document.getElementById('evallbl-w').textContent = '—';
+      var bLblB = document.querySelector('#evalblk-b .evalblk-label');
+      var wLblB = document.querySelector('#evalblk-w .evalblk-label');
+      if (bLblB) bLblB.textContent = 'Schwarz gewinnt';
+      if (wLblB) wLblB.textContent = 'Weiß';
+      return;
+    }
+    if (evalOutcome === 'draw') {
+      document.getElementById('evalblk-b').style.flex = 50;
+      document.getElementById('evalblk-w').style.flex = 50;
+      document.getElementById('evallbl-b').textContent = 'REMIS';
+      document.getElementById('evallbl-w').textContent = 'PATT';
+      var bLblD = document.querySelector('#evalblk-b .evalblk-label');
+      var wLblD = document.querySelector('#evalblk-w .evalblk-label');
+      if (bLblD) bLblD.textContent = 'Schwarz';
+      if (wLblD) wLblD.textContent = 'Weiß';
+      return;
+    }
+  }
+  setEvalOutcome(null);
   var isMate = Math.abs(cp) > 9000;
   var clamped = Math.max(-500, Math.min(500, cp));
   // flex values: white gets more when cp > 0, black gets more when cp < 0
@@ -1039,10 +1098,14 @@ function checkEnd() {
   if (!game) return false;
   if (game.in_checkmate()) {
     var ww = game.turn() === 'b';
+    setEvalOutcome(ww ? 'white-win' : 'black-win');
+    setEval(ww ? 9101 : -9101);
     setGameStatus(ww ? '🎉 Schachmatt! Gewonnen!' : '❌ Niederlage — neue Stellung!', ww ? 'win' : 'lose');
     return true;
   }
   if (game.in_stalemate() || game.in_draw()) {
+    setEvalOutcome('draw');
+    setEval(0);
     setGameStatus('½ Remis — Patt oder Dauerschach!', 'draw');
     return true;
   }
@@ -1059,6 +1122,7 @@ function undoLast() {
   if (hist.length > 2) hist.splice(-2); else hist.pop();
   game = new Chess(hist[hist.length - 1].fen);
   sel = null; lastMv = null; busy = false;
+  setEvalOutcome(null);
   mvCnt = Math.max(1, mvCnt - 1);
   document.getElementById('mctr').textContent = 'ZUG ' + mvCnt;
   renderBoard();
