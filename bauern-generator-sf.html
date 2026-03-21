@@ -1006,7 +1006,15 @@ function loadExplanation() {
     : ('Erkläre WARUM \"' + (ctx.bestMove || '?') + '\" stärker ist als \"' + ctx.playerMove + '\". Nenne konkrete Felder und was durch den Spielerzug schwächer wird.');
 
   var content =
-    'BRETT VOR DEM ZUG (Weiß am Zug):\n' + boardBefore +
+    'ZWIANGSREGELN (Schachkorrektheit):\n' +
+    '- Nutze nur Felder a1–h8. Nenne keine Figuren auf Feldern, die nicht im ASCII-Brett oder in den FENs vorkommen.\n' +
+    '- Der Spielerzug ist genau der genannte SAN/UCI; erfinde keine andere Zugfolge oder Partiegeschichte.\n' +
+    '- Stockfish-Bewertungen sind in Weiß-Sicht; widerspreche ihnen nicht — erkläre sie plausibel mit dem Brett.\n' +
+    '- Erwähne nur Züge aus den gelieferten legalen Listen oder den explizit genannten SAN/UCI-Zügen.\n' +
+    '- Endspiel-Ideen (Opposition, Freibauer, König vor Bauer, Zugzwang) nur, wenn sie zur konkreten Stellung passen.\n\n' +
+    'FEN VOR DEM ZUG: ' + ctx.fen +
+    '\nFEN NACH DEM SPIELERZUG: ' + ctx.fenAfter +
+    '\n\nBRETT VOR DEM ZUG (Weiß am Zug, ASCII):\n' + boardBefore +
     '\nLegale Züge für Weiß (gekürzt, max. ' + EXPLAIN_LEGAL_MOVES_MAX + '): ' + legalBeforeStr +
     '\n\nSPIELERZUG (Weiß): SAN \"' + ctx.playerMove + '\"' +
     (ctx.playerUci ? (', UCI \"' + ctx.playerUci + '\"') : '') +
@@ -1017,7 +1025,7 @@ function loadExplanation() {
     '\n- Nach dem besten Engine-Zug (nur Einordnung, erster Zug der PV): ' + cpStr(ctx.cpBestAfter) +
     (deltaVsBest !== null ? ('\n- Vergleich: deine Stellung vs. Bestzug-Linie (Nachher_spieler − Nachher_best): ' + (deltaVsBest >= 0 ? '+' : '') + (deltaVsBest / 100).toFixed(2) + ' Bauerneinheiten') : '') +
     (lossLine ? ('\n- ' + lossLine) : '') +
-    '\n\nBRETT NACH DEM SPIELERZUG:\n' + boardAfter +
+    '\n\nBRETT NACH DEM SPIELERZUG (ASCII):\n' + boardAfter +
     '\nLegale Züge für Schwarz (gekürzt): ' + legalAfterStr +
     '\n\nSTOCKFISH: ' + bestMoveLine + ' PV (SAN, Anfang): ' + (pvStr || '—') +
     (pvHint ? ('\n' + pvHint) : '') +
