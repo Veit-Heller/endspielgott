@@ -119,21 +119,6 @@ input[type=range]{flex:1;accent-color:#8B5E3C;}
 <div id="app">
   <h1>♟ Bauern<span>endspiel</span></h1>
 
-  <!-- Endgame situation panel -->
-  <div id="situation-panel" style="display:none;width:100%;background:#fff;border:1px solid #e8e6de;border-radius:14px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.06);">
-    <div style="display:flex;align-items:center;gap:8px;padding:10px 14px;background:#1a0e06;cursor:pointer;" onclick="toggleSituation()">
-      <span style="font-size:16px;">♚</span>
-      <span id="sit-title" style="font-family:'Nunito',sans-serif;font-weight:800;font-size:13px;color:#F0C040;flex:1;"></span>
-      <span id="sit-arrow" style="font-size:12px;color:#F0C040;font-weight:700;">▼</span>
-    </div>
-    <div id="sit-body" style="padding:12px 14px;display:flex;flex-direction:column;gap:10px;">
-      <div id="sit-goals"></div>
-      <div id="sit-warnings" style="display:none;"></div>
-      <button onclick="toggleWarnings()" id="warn-btn" style="align-self:flex-start;padding:5px 12px;border-radius:8px;font-family:'Nunito',sans-serif;font-weight:800;font-size:11px;border:1.5px solid #e0ddd6;background:#f9f8f4;color:#888;cursor:pointer;">⚠️ Häufige Fehler zeigen</button>
-      <div id="sit-tip" style="font-size:12px;font-weight:700;color:#8B5E3C;background:#FFF9F0;border-radius:8px;padding:8px 10px;border-left:3px solid #F0C040;"></div>
-    </div>
-  </div>
-
   <div class="board-outer" style="align-self:center;">
     <div class="board-frame">
       <div class="board-labels-left">
@@ -179,12 +164,27 @@ input[type=range]{flex:1;accent-color:#8B5E3C;}
     <div class="explain-box" id="explain-box"></div>
   </div>
 
-  <!-- game status panel removed (requested) -->
+  <!-- Endgame situation panel (zwischen Züge und Buttons) -->
+  <div id="situation-panel" style="display:none;width:100%;background:#fff;border:1px solid #e8e6de;border-radius:14px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.06);">
+    <div style="display:flex;align-items:center;gap:8px;padding:10px 14px;background:#1a0e06;cursor:pointer;" onclick="toggleSituation()">
+      <span style="font-size:16px;">♚</span>
+      <span id="sit-title" style="font-family:'Nunito',sans-serif;font-weight:800;font-size:13px;color:#F0C040;flex:1;"></span>
+      <span id="sit-arrow" style="font-size:12px;color:#F0C040;font-weight:700;">▼</span>
+    </div>
+    <div id="sit-body" style="padding:12px 14px;display:flex;flex-direction:column;gap:10px;">
+      <div id="sit-goals"></div>
+      <div id="sit-warnings" style="display:none;"></div>
+      <button onclick="toggleWarnings()" id="warn-btn" style="align-self:flex-start;padding:5px 12px;border-radius:8px;font-family:'Nunito',sans-serif;font-weight:800;font-size:11px;border:1.5px solid #e0ddd6;background:#f9f8f4;color:#888;cursor:pointer;">⚠️ Häufige Fehler zeigen</button>
+      <div id="sit-tip" style="font-size:12px;font-weight:700;color:#8B5E3C;background:#FFF9F0;border-radius:8px;padding:8px 10px;border-left:3px solid #F0C040;"></div>
+    </div>
+  </div>
 
   <div class="btnrow">
     <button class="btn btnp" id="gen-btn" onclick="generatePosition()" disabled>⏳ Stockfish lädt…</button>
     <button class="btn btns" onclick="undoLast()">↩ Zurück</button>
   </div>
+
+  <!-- game status panel removed (requested) -->
 
   <div class="setup" style="padding:12px 18px;">
     <div class="setup-row">
@@ -771,7 +771,7 @@ function afterMove(fenBefore, move) {
         var cpBestAfterEval = cpBeforeEval;
         var cpLoss = Math.max(0, cpBestAfterEval - cpAfterActual);
         askClaudeForFeedback(
-          fenBefore, game.fen(), move.san, bestSAN,
+          fenBefore, game.fen(), move.san, move.from + move.to + (move.promotion || ''), bestSAN, null,
           cpBeforeEval, cpAfterActual, cpBestAfterEval,
           cpAfterActual - cpBestAfterEval, cpLoss,
           isBestMove, pvSAN
@@ -806,7 +806,7 @@ function afterMove(fenBefore, move) {
           var cpBestAfterEval = cpBeforeEval;
           var cpLoss = Math.max(0, cpBestAfterEval - cpAfterActual);
           askClaudeForFeedback(
-            fenBefore, game.fen(), move.san, bestSAN,
+            fenBefore, game.fen(), move.san, move.from + move.to + (move.promotion || ''), bestSAN, bestUci,
             cpBeforeEval, cpAfterActual, cpBestAfterEval,
             cpAfterActual - cpBestAfterEval, cpLoss,
             isBestMove, pvSAN
@@ -817,7 +817,7 @@ function afterMove(fenBefore, move) {
             if (cpBestAfterEval === null || cpBestAfterEval === undefined) cpBestAfterEval = cpBeforeEval;
             var cpLoss = Math.max(0, cpBestAfterEval - cpAfterActual);
             askClaudeForFeedback(
-              fenBefore, game.fen(), move.san, bestSAN,
+              fenBefore, game.fen(), move.san, move.from + move.to + (move.promotion || ''), bestSAN, bestUci,
               cpBeforeEval, cpAfterActual, cpBestAfterEval,
               cpAfterActual - cpBestAfterEval, cpLoss,
               isBestMove, pvSAN
@@ -934,6 +934,45 @@ function setRatingThinking() {
   label.className = 'rating-label idle'; label.textContent = 'SF18 analysiert…';
 }
 
+// KI-Erklärung: Token sparen + robustes JSON-Parsing
+var EXPLAIN_LEGAL_MOVES_MAX = 40;
+
+function truncateMoveListSAN(moves, maxN) {
+  if (!moves || !moves.length) return '(keine)';
+  if (moves.length <= maxN) return moves.join(', ');
+  return moves.slice(0, maxN).join(', ') + ' … (+' + (moves.length - maxN) + ' weitere)';
+}
+
+function pvExampleFromSAN(pvSAN, maxPlies) {
+  if (!pvSAN || !pvSAN.length) return '';
+  var n = Math.min(maxPlies || 4, pvSAN.length);
+  var slice = pvSAN.slice(0, n);
+  return 'Orientierung an der Engine-Hauptvariante (erste Züge): ' + slice.join(' → ') + '.';
+}
+
+function parseExplainJson(raw) {
+  var s = String(raw || '').replace(/```json|```/g, '').trim();
+  try {
+    var j = JSON.parse(s);
+    return {
+      summary: (j.summary || '').trim(),
+      detail: (j.detail || j.explanation || '').trim()
+    };
+  } catch (e) {
+    var m = s.match(/\{[\s\S]*\}/);
+    if (m) {
+      try {
+        var j2 = JSON.parse(m[0]);
+        return {
+          summary: (j2.summary || '').trim(),
+          detail: (j2.detail || j2.explanation || '').trim()
+        };
+      } catch (e2) {}
+    }
+  }
+  return { summary: '', detail: s };
+}
+
 function loadExplanation() {
   if (!lastMoveContext) return;
   var btn = document.getElementById('explain-btn');
@@ -941,40 +980,53 @@ function loadExplanation() {
   btn.disabled = true;
   btn.innerHTML = '<div class="thdots"><div class="dp"></div><div class="dp"></div><div class="dp"></div></div>';
   box.className = 'explain-box';
+  box.textContent = '';
 
   var ctx = lastMoveContext;
   var boardBefore = fenToBoard(ctx.fen);
   var boardAfter  = fenToBoard(ctx.fenAfter);
-  var isBest = ctx.isBestMove || !ctx.bestMove;
   var pvStr  = (ctx.pvSAN || []).slice(0, 4).join(' → ');
+  var pvHint = pvExampleFromSAN(ctx.pvSAN, 4);
 
-  // Legal moves FROM the position before the move (so Claude knows what was possible)
-  var legalBefore = ctx.legalBefore || [];
-  // Legal moves in current position (so Claude doesn't suggest illegal moves)
-  var legalAfter  = ctx.legalAfter  || [];
+  var legalBeforeStr = truncateMoveListSAN(ctx.legalBefore || [], EXPLAIN_LEGAL_MOVES_MAX);
+  var legalAfterStr  = truncateMoveListSAN(ctx.legalAfter || [], EXPLAIN_LEGAL_MOVES_MAX);
 
-  var lossText = (ctx.cpLoss && ctx.cpLoss > 10) ? ('Verlust: ' + (ctx.cpLoss/100).toFixed(2) + ' Bauerneinheiten') : '';
+  var cpDeltaVsBefore = (ctx.cpAfter != null && ctx.cpBefore != null) ? (ctx.cpAfter - ctx.cpBefore) : null;
+  var deltaVsBest = ctx.cpDeltaVsBest != null ? ctx.cpDeltaVsBest : null;
+  var lossLine = (ctx.cpLoss && ctx.cpLoss > 10)
+    ? ('Messbarer Nachteil vs. besten Zug: ca. ' + (ctx.cpLoss / 100).toFixed(2) + ' Bauerneinheiten (Centipawns/100).')
+    : '';
 
-  var goodExample = ctx.isBestMove
-    ? 'Gutes Beispiel: \"Mit Ke5 stellst du deinen König direkt vor den e4-Bauern — das ist das Schlüsselfeld. Von e5 kontrollierst du d6 und f6, der schwarze König kann den Bauern nicht mehr aufhalten.\"'
-    : 'Gutes Beispiel: \"' + ctx.playerMove + ' geht in die falsche Richtung. Mit ' + ctx.bestMove + ' hättest du die Opposition gewonnen: Schwarz müsste zurückweichen und der Bauer marschiert durch.\"';
+  var bestMoveLine = ctx.bestMove
+    ? ('Bester Zug laut Engine: SAN \"' + ctx.bestMove + '\"' + (ctx.bestUci ? (', UCI \"' + ctx.bestUci + '\"') : '') + '.')
+    : 'Kein alternativer Bestzug von Stockfish geliefert.';
 
   var task = ctx.isBestMove
-    ? ('Erkläre in 2-3 Sätzen WARUM \"' + ctx.playerMove + '\" der beste Zug war. Beantworte konkret: Welches Feld/Plan ermöglicht dieser Zug? Warum kann Schwarz nicht mehr widerstehen? ' + goodExample)
-    : ('Erkläre in 2-3 Sätzen WARUM \"' + ctx.bestMove + '\" besser war als \"' + ctx.playerMove + '\". Was macht ' + ctx.bestMove + ' konkret — welches Feld, welcher Plan? Was geht durch ' + ctx.playerMove + ' verloren? ' + goodExample);
+    ? ('Erkläre WARUM \"' + ctx.playerMove + '\" hier der beste Zug war. Nenne konkrete Felder und den Plan in 1–2 Sätzen im detail-Teil.')
+    : ('Erkläre WARUM \"' + (ctx.bestMove || '?') + '\" stärker ist als \"' + ctx.playerMove + '\". Nenne konkrete Felder und was durch den Spielerzug schwächer wird.');
 
   var content =
-    'BRETT VOR DEM ZUG:\n' + boardBefore +
-    '\nAlle legalen Züge für Weiß: ' + legalBefore.join(', ') +
-    '\n\nWEIß ZOG: ' + ctx.playerMove +
-    '\nStockfish vorher: ' + cpStr(ctx.cpBefore) + ' / nachher: ' + cpStr(ctx.cpAfter) +
-    (lossText ? ' (' + lossText + ')' : '') +
-    '\n\nBRETT NACH DEM ZUG:\n' + boardAfter +
-    '\nLegale Züge für Schwarz: ' + legalAfter.join(', ') +
-    '\n\nSTOCKFISH: ' + (ctx.isBestMove ? 'Bester Zug! PV: ' + pvStr : 'Besser wäre: ' + ctx.bestMove + ' | PV: ' + pvStr) +
+    'BRETT VOR DEM ZUG (Weiß am Zug):\n' + boardBefore +
+    '\nLegale Züge für Weiß (gekürzt, max. ' + EXPLAIN_LEGAL_MOVES_MAX + '): ' + legalBeforeStr +
+    '\n\nSPIELERZUG (Weiß): SAN \"' + ctx.playerMove + '\"' +
+    (ctx.playerUci ? (', UCI \"' + ctx.playerUci + '\"') : '') +
+    '\n\nBEWERTUNGEN (alle aus Sicht von Weiß: höher = besser für Weiß, niedriger = besser für Schwarz):' +
+    '\n- Vor dem Spielerzug (Stellung, Weiß am Zug): ' + cpStr(ctx.cpBefore) +
+    '\n- Nach dem Spielerzug: ' + cpStr(ctx.cpAfter) +
+    (cpDeltaVsBefore !== null ? ('\n- Änderung durch deinen Zug (Nachher − Vorher): ' + (cpDeltaVsBefore >= 0 ? '+' : '') + (cpDeltaVsBefore / 100).toFixed(2) + ' Bauerneinheiten') : '') +
+    '\n- Nach dem besten Engine-Zug (nur Einordnung, erster Zug der PV): ' + cpStr(ctx.cpBestAfter) +
+    (deltaVsBest !== null ? ('\n- Vergleich: deine Stellung vs. Bestzug-Linie (Nachher_spieler − Nachher_best): ' + (deltaVsBest >= 0 ? '+' : '') + (deltaVsBest / 100).toFixed(2) + ' Bauerneinheiten') : '') +
+    (lossLine ? ('\n- ' + lossLine) : '') +
+    '\n\nBRETT NACH DEM SPIELERZUG:\n' + boardAfter +
+    '\nLegale Züge für Schwarz (gekürzt): ' + legalAfterStr +
+    '\n\nSTOCKFISH: ' + bestMoveLine + ' PV (SAN, Anfang): ' + (pvStr || '—') +
+    (pvHint ? ('\n' + pvHint) : '') +
     '\n\nAUFGABE: ' + task +
-    '\nSprache: Deutsch. Sprich den Spieler direkt an (du). Keine leeren Floskeln. Nenne konkrete Felder.' +
-    '\nNUR JSON: {\"explanation\":\"2-3 Sätze\"}';
+    '\nStil: Deutsch, direktes \"du\", keine leeren Floskeln, keine erfundenen Züge (nur aus den Listen / dem genannten SAN-UCI).' +
+    '\n\nFORMAT (strikt):' +
+    '\nAntworte AUSSCHLIESSLICH mit EINEM JSON-Objekt. Kein Text davor oder danach, keine Markdown-Codefences.' +
+    '\nSchema: {\"summary\":\"Genau ein Satz Kernthese.\",\"detail\":\"Zwei kurze Sätze mit Feldern und Konsequenz.\"}' +
+    '\nFeld \"summary\": ein Satz. Feld \"detail\": genau zwei Sätze.';
 
   fetch('/api/explain', {
     method: 'POST',
@@ -991,9 +1043,19 @@ function loadExplanation() {
   })
     .then(function(d) {
       var raw = (d.content && d.content[0] && d.content[0].text) || '{}';
-      var j = JSON.parse(raw.replace(/```json|```/g, '').trim());
+      var parsed = parseExplainJson(raw);
       box.className = 'explain-box visible';
-      box.textContent = j.explanation || '—';
+      box.textContent = '';
+      var sumEl = document.createElement('div');
+      sumEl.style.fontWeight = '900';
+      sumEl.style.marginBottom = '8px';
+      sumEl.textContent = parsed.summary || '—';
+      box.appendChild(sumEl);
+      var detEl = document.createElement('div');
+      detEl.style.fontWeight = '700';
+      detEl.style.lineHeight = '1.45';
+      detEl.textContent = parsed.detail || '';
+      box.appendChild(detEl);
       btn.style.display = 'none';
     })
     .catch(function(err) {
@@ -1004,7 +1066,7 @@ function loadExplanation() {
     });
 }
 
-function askClaudeForFeedback(fen, fenAfter, playerMove, bestMove, cpBeforeEval, cpAfterActual, cpBestAfterEval, delta, cpLoss, isBestMove, pvSAN) {
+function askClaudeForFeedback(fen, fenAfter, playerMove, playerUci, bestMove, bestUci, cpBeforeEval, cpAfterActual, cpBestAfterEval, deltaVsBest, cpLoss, isBestMove, pvSAN) {
   // Compute legal moves for context
   var legalBefore = [], legalAfter = [];
   try { legalBefore = new Chess(fen).moves(); } catch(e) {}
@@ -1013,8 +1075,10 @@ function askClaudeForFeedback(fen, fenAfter, playerMove, bestMove, cpBeforeEval,
   // Store full context for the explain button
   lastMoveContext = {
     fen: fen, fenAfter: fenAfter,
-    playerMove: playerMove, bestMove: bestMove,
-    cpBefore: cpBeforeEval, cpAfter: cpAfterActual,
+    playerMove: playerMove, playerUci: playerUci || '',
+    bestMove: bestMove, bestUci: bestUci || '',
+    cpBefore: cpBeforeEval, cpAfter: cpAfterActual, cpBestAfter: cpBestAfterEval,
+    cpDeltaVsBest: deltaVsBest, cpLoss: cpLoss,
     isBestMove: isBestMove, pvSAN: pvSAN,
     legalBefore: legalBefore, legalAfter: legalAfter
   };
