@@ -488,6 +488,46 @@ function fenToPieceInventory(fen) {
   return 'Weiß: ' + (white.length ? white.join(', ') : '—') + '\nSchwarz: ' + (black.length ? black.join(', ') : '—');
 }
 
+// Jede der 64 Felder explizit (wK/wB = weiß König/Bauer, sK/sB = schwarz) — maximale Lesesicherheit fürs LLM
+function fenCharToCellCode(ch) {
+  var isW = ch === ch.toUpperCase() && ch !== ch.toLowerCase();
+  var t = String(ch).toLowerCase();
+  var fig = t === 'k' ? 'K' : t === 'q' ? 'D' : t === 'r' ? 'T' : t === 'b' ? 'L' : t === 'n' ? 'N' : t === 'p' ? 'P' : '?';
+  return (isW ? 'w' : 's') + fig;
+}
+
+function fenToFieldTable(fen) {
+  var pos = (fen || '').split(' ')[0];
+  if (!pos) return '(keine FEN)';
+  var rows = pos.split('/');
+  var occ = {};
+  for (var ri = 0; ri < 8; ri++) {
+    var rank = 8 - ri;
+    var col = 0;
+    var row = rows[ri] || '';
+    for (var ci = 0; ci < row.length; ci++) {
+      var ch = row[ci];
+      if (ch >= '1' && ch <= '8') col += parseInt(ch, 10);
+      else {
+        var file = String.fromCharCode(97 + col);
+        occ[file + rank] = fenCharToCellCode(ch);
+        col++;
+      }
+    }
+  }
+  var legend = 'Legende: wK=weißer König, wP=weißer Bauer, sK/sP=schwarz; wD,wT,wL,wN = weiß Dame,Turm,Läufer,Springer (s… = schwarz); -- = leer.\n';
+  var out = legend;
+  for (var r = 8; r >= 1; r--) {
+    var parts = [];
+    for (var c = 0; c < 8; c++) {
+      var sq = String.fromCharCode(97 + c) + r;
+      parts.push(sq + '[' + (occ[sq] || '--') + ']');
+    }
+    out += 'Rang ' + r + ': ' + parts.join(' ') + '\n';
+  }
+  return out.trimEnd();
+}
+
 // difficulty: 1=Leicht(+80..+200), 2=Mittel(+30..+150), 3=Schwer(+10..+80)
 var difficulty = 2;
 var DIFF_RANGES = { 1:[80,200], 2:[30,150], 3:[10,80] };
@@ -989,7 +1029,7 @@ function setRatingThinking() {
 }
 
 // KI-Erklärung: Token sparen + robustes JSON-Parsing
-var EXPLAIN_LEGAL_MOVES_MAX = 40;
+var EXPLAIN_LEGAL_MOVES_MAX = 18;
 
 function truncateMoveListSAN(moves, maxN) {
   if (!moves || !moves.length) return '(keine)';
@@ -1037,66 +1077,64 @@ function loadExplanation() {
   box.textContent = '';
 
   var ctx = lastMoveContext;
-  var boardBefore = fenToBoard(ctx.fen);
-  var boardAfter  = fenToBoard(ctx.fenAfter);
+  var tableBefore = fenToFieldTable(ctx.fen);
+  var tableAfter  = fenToFieldTable(ctx.fenAfter);
   var piecesBefore = fenToPieceInventory(ctx.fen);
   var piecesAfter  = fenToPieceInventory(ctx.fenAfter);
-  var pvStr  = (ctx.pvSAN || []).slice(0, 4).join(' → ');
-  var pvHint = pvExampleFromSAN(ctx.pvSAN, 4);
 
   var legalBeforeStr = truncateMoveListSAN(ctx.legalBefore || [], EXPLAIN_LEGAL_MOVES_MAX);
   var legalAfterStr  = truncateMoveListSAN(ctx.legalAfter || [], EXPLAIN_LEGAL_MOVES_MAX);
 
-  var cpDeltaVsBefore = (ctx.cpAfter != null && ctx.cpBefore != null) ? (ctx.cpAfter - ctx.cpBefore) : null;
   var deltaVsBest = ctx.cpDeltaVsBest != null ? ctx.cpDeltaVsBest : null;
   var lossLine = (ctx.cpLoss && ctx.cpLoss > 10)
-    ? ('Messbarer Nachteil vs. besten Zug: ca. ' + (ctx.cpLoss / 100).toFixed(2) + ' Bauerneinheiten (Centipawns/100).')
+    ? ('Nachteil vs. besten Zug: ca. ' + (ctx.cpLoss / 100).toFixed(2) + ' Bauerneinheiten.')
     : '';
 
-  var bestMoveLine = ctx.bestMove
-    ? ('Bester Zug laut Engine: SAN \"' + ctx.bestMove + '\"' + (ctx.bestUci ? (', UCI \"' + ctx.bestUci + '\"') : '') + '.')
-    : 'Kein alternativer Bestzug von Stockfish geliefert.';
+  var sideBefore = (ctx.fen.split(' ')[1] === 'b') ? 'Schwarz' : 'Weiß';
+  var sideAfter  = (ctx.fenAfter.split(' ')[1] === 'b') ? 'Schwarz' : 'Weiß';
+
+  var betterBlock = ctx.isBestMove
+    ? ('Du hast den laut Engine besten Zug gespielt (Vergleich entfällt).')
+    : ('BESSER GEWESEN (laut Engine, aus Sicht Weiß): SAN \"' + (ctx.bestMove || '?') + '\"' +
+      (ctx.bestUci ? (', UCI \"' + ctx.bestUci + '\"') : '') +
+      ' — Stellungswert nach diesem Zug ca. ' + cpStr(ctx.cpBestAfter) + ' (Weiß-Sicht).' +
+      '\nDein Zug führte zu ca. ' + cpStr(ctx.cpAfter) + '.' +
+      (deltaVsBest !== null ? (' Differenz (dein Nachher − Nachher_Bestzug): ' + (deltaVsBest / 100).toFixed(2) + '.') : '') +
+      (lossLine ? (' ' + lossLine) : ''));
 
   var task = ctx.isBestMove
-    ? ('Erkläre WARUM \"' + ctx.playerMove + '\" hier der beste Zug war. Nenne konkrete Felder und den Plan in 1–2 Sätzen im detail-Teil.')
-    : ('Erkläre WARUM \"' + (ctx.bestMove || '?') + '\" stärker ist als \"' + ctx.playerMove + '\". Nenne konkrete Felder und was durch den Spielerzug schwächer wird.');
+    ? ('Erkläre kurz, warum \"' + ctx.playerMove + '\" hier passt — nur mit Feldern aus der Tabelle/Stückliste.')
+    : ('Erkläre kurz, warum \"' + (ctx.bestMove || '?') + '\" der Spielerwahl \"' + ctx.playerMove + '\" vorzuziehen war — nur mit Feldern aus der Tabelle/Stückliste.');
 
   var content =
-    'ZWANGSREGELN (Schachkorrektheit):\n' +
-    '- STÜCKLISTE VOR/NACH ist VERBINDLICH: Jede Figur und jedes Feld, das du erwähnst, muss wortgenau in der passenden Liste vorkommen. Kein „Bauer auf f3“, wenn nur „Bauer auf f2“ steht.\n' +
-    '- Erfinde keine Züge, die einen Bauern „erst auf f2 stellen“ — der Bauer steht schon so, wie die Liste sagt (vor bzw. nach dem Spielerzug).\n' +
-    '- Nutze nur Felder a1–h8. Nenne keine Figuren auf Feldern, die nicht in STÜCKLISTE oder ASCII-Brett vorkommen.\n' +
-    '- Der Spielerzug ist genau der genannte SAN/UCI; erfinde keine andere Zugfolge oder Partiegeschichte.\n' +
-    '- Stockfish-Bewertungen sind in Weiß-Sicht; widerspreche ihnen nicht — erkläre sie plausibel mit dem Brett.\n' +
-    '- Erwähne nur Züge aus den gelieferten legalen Listen oder den explizit genannten SAN/UCI-Zügen.\n' +
-    '- Endspiel-Ideen (Opposition, Freibauer, König vor Bauer, Zugzwang, Umwandlung droht) nur, wenn sie zur STÜCKLISTE passen.\n' +
-    '- SELBSTPRUEFUNG (mehrfach, vor dem JSON): Prüfe JEDEN Satz gegen STÜCKLISTE + ASCII. Liegt jede genannte Figur auf dem genannten Feld? Wenn nein: umschreiben oder weglassen.\n\n' +
-    'FEN VOR DEM ZUG: ' + ctx.fen +
-    '\nFEN NACH DEM SPIELERZUG: ' + ctx.fenAfter +
-    '\n\nSTÜCKLISTE VOR DEM SPIELERZUG (verbindlich):\n' + piecesBefore +
-    '\n\nSTÜCKLISTE NACH DEM SPIELERZUG (verbindlich):\n' + piecesAfter +
-    '\n\nBRETT VOR DEM ZUG (Weiß am Zug, ASCII):\n' + boardBefore +
-    '\nLegale Züge für Weiß (gekürzt, max. ' + EXPLAIN_LEGAL_MOVES_MAX + '): ' + legalBeforeStr +
-    '\n\nSPIELERZUG (Weiß): SAN \"' + ctx.playerMove + '\"' +
-    (ctx.playerUci ? (', UCI \"' + ctx.playerUci + '\"') : '') +
-    '\n\nBEWERTUNGEN (alle aus Sicht von Weiß: höher = besser für Weiß, niedriger = besser für Schwarz):' +
-    '\n- Vor dem Spielerzug (Stellung, Weiß am Zug): ' + cpStr(ctx.cpBefore) +
-    '\n- Nach dem Spielerzug: ' + cpStr(ctx.cpAfter) +
-    (cpDeltaVsBefore !== null ? ('\n- Änderung durch deinen Zug (Nachher − Vorher): ' + (cpDeltaVsBefore >= 0 ? '+' : '') + (cpDeltaVsBefore / 100).toFixed(2) + ' Bauerneinheiten') : '') +
-    '\n- Nach dem besten Engine-Zug (nur Einordnung, erster Zug der PV): ' + cpStr(ctx.cpBestAfter) +
-    (deltaVsBest !== null ? ('\n- Vergleich: deine Stellung vs. Bestzug-Linie (Nachher_spieler − Nachher_best): ' + (deltaVsBest >= 0 ? '+' : '') + (deltaVsBest / 100).toFixed(2) + ' Bauerneinheiten') : '') +
-    (lossLine ? ('\n- ' + lossLine) : '') +
-    '\n\nBRETT NACH DEM SPIELERZUG (ASCII):\n' + boardAfter +
-    '\nLegale Züge für Schwarz (gekürzt): ' + legalAfterStr +
-    '\n\nSTOCKFISH: ' + bestMoveLine + ' PV (SAN, Anfang): ' + (pvStr || '—') +
-    (pvHint ? ('\n' + pvHint) : '') +
-    '\n\nAUFGABE: ' + task +
-    '\nStil: Deutsch, direktes \"du\", keine leeren Floskeln, keine erfundenen Züge (nur aus den Listen / dem genannten SAN-UCI).' +
-    '\n\nFORMAT (strikt):' +
-    '\nAntworte AUSSCHLIESSLICH mit EINEM JSON-Objekt. Kein Text davor oder danach, keine Markdown-Codefences.' +
-    '\nSchema: {\"summary\":\"Genau ein Satz Kernthese.\",\"detail\":\"Zwei kurze Sätze mit Feldern und Konsequenz.\"}' +
-    '\nFeld \"summary\": ein Satz. Feld \"detail\": genau zwei Sätze.' +
-    '\nVor dem Absenden: nochmals Plausibilitätscheck — jede Behauptung muss sich im ASCII-Brett (vor/nach) und in den FENs ablesen lassen.';
+    'AUFGABE (kurz): Stellung exakt lesen, dann in 1+2 Sätzen erklären.\n\n' +
+    'STELLUNG LESEN (in dieser Reihenfolge prüfen — alle drei müssen zusammenpassen):\n' +
+    '1) FELDER-TABELLE: jedes Feld a1–h8 ist genau ein Eintrag [wK/wB/sK/sB/--].\n' +
+    '2) FEN: technische Kopie derselben Stellung.\n' +
+    '3) STÜCKLISTE: dieselben Figuren in Alltagssprache.\n\n' +
+    'REGELN:\n' +
+    '- Erwähne nur Felder/Figuren, die in FELDER-TABELLE + STÜCKLISTE zur passenden Phase (vor/nach) vorkommen.\n' +
+    '- Spielerzug und besserer Zug sind vorgegeben; erfinde keine andere Partie oder Zugfolge.\n' +
+    '- Bewertungen sind Weiß-Sicht (höher = besser für Weiß).\n\n' +
+    '=== VOR DEINEM ZUG (Entscheidungsstellung) — am Zug: ' + sideBefore + ' ===\n' +
+    'FEN: ' + ctx.fen + '\n\n' +
+    'FELDER-TABELLE:\n' + tableBefore + '\n\n' +
+    'STÜCKLISTE:\n' + piecesBefore + '\n' +
+    'Legale Züge ' + sideBefore + ' (Stichprobe, max. ' + EXPLAIN_LEGAL_MOVES_MAX + '): ' + legalBeforeStr + '\n\n' +
+    '=== DEIN ZUG (Weiß) ===\n' +
+    'SAN: \"' + ctx.playerMove + '\"' + (ctx.playerUci ? (', UCI: \"' + ctx.playerUci + '\"') : '') + '\n\n' +
+    '=== NACH DEINEM ZUG — am Zug: ' + sideAfter + ' ===\n' +
+    'FEN: ' + ctx.fenAfter + '\n\n' +
+    'FELDER-TABELLE:\n' + tableAfter + '\n\n' +
+    'STÜCKLISTE:\n' + piecesAfter + '\n' +
+    'Legale Züge ' + sideAfter + ' (Stichprobe): ' + legalAfterStr + '\n\n' +
+    '=== ENGINE-EINORDNUNG (Weiß-Sicht) ===\n' +
+    'Vor deinem Zug (Stellungswert): ' + cpStr(ctx.cpBefore) + '\n' +
+    betterBlock + '\n\n' +
+    'TEXTAUFGABE: ' + task + '\n' +
+    'Stil: Deutsch, \"du\", sachlich, keine Floskeln.\n\n' +
+    'FORMAT (strikt): nur EIN JSON-Objekt, kein Markdown.\n' +
+    '{\"summary\":\"Ein Satz Kernthese.\",\"detail\":\"Genau zwei Sätze; jedes genannte Feld muss in der passenden FELDER-TABELLE vorkommen.\"}';
 
   fetch('/api/explain', {
     method: 'POST',
