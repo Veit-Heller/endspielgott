@@ -1466,6 +1466,38 @@ var ENDGAME_CATALOG = [
     tip:'💡 In symmetrischen Stellungen gewinnt wessen König zuerst auf die 5. Reihe des Gegners einbricht.'
   },
   {
+    id:'qq_vs_k',priority:96,
+    match:function(p){
+      return p.wQ>=2&&p.wP===0&&p.wR===0&&p.wB===0&&p.wN===0
+        &&p.bQ===0&&p.bR===0&&p.bB===0&&p.bN===0&&p.bP===0;
+    },
+    title:'Zwei Damen vs König',
+    goals:['Matt in wenigen Zügen erzwingen — zwei Damen mattieren ohne weißen König (klassisch: Damen kooperieren)','Eine Dame als „Netz“, die andere liefert Schach oder stellt ein','Schwarzen König zuerst an den Brettsrand drängen','Optional: eigenen König einbeziehen wenn nötig — verhindert Patt und hilft beim Einengen'],
+    warnings:['⚠️ Zu früh zugeben — mit zwei Damen ist Matt immer möglich, aber Patt vermeiden wenn der König zu weit weg ist','⚠️ Dame nicht so stellen dass der schwarze König patt steht bevor Matt droht','⚠️ Zeit nicht verschwenden — systematisch einengen'],
+    tip:'💡 Standardidee: Eine Dame begrenzt das Feld, die zweite setzt Matt. Ohne weißen König in der Nähe: beide Damen bilden eine kleine „Fangzone“.'
+  },
+  {
+    id:'q_vs_k',priority:94,
+    match:function(p){
+      return p.wQ===1&&p.wP===0&&p.wR===0&&p.wB===0&&p.wN===0
+        &&p.bQ===0&&p.bR===0&&p.bB===0&&p.bN===0&&p.bP===0;
+    },
+    title:'Dame vs König (ohne Bauern)',
+    goals:['Ohne eigenen König geht kein Matt — weißen König aktiv zur Hilfe holen','Box-Methode: schwarzen König mit der Dame an den Rand drängen','Abstand halten: Dame nicht zu nah stellen (Patt!)','Mattbild kennen: König und Dame kooperieren am Rand oder in der Ecke'],
+    warnings:['⚠️ PATT ist die Hauptgefahr — Dame blockiert alle Felder, schwarzer König darf nicht ziehen = Remis','⚠️ Dame allein reicht nicht — ohne weißen König gibt es kein reguläres Matt','⚠️ Matt in der Ecke oder am Rand üben — Mittelfeld-Matt braucht Königsnähe'],
+    tip:'💡 Merksatz: Erst den schwarzen König mit der Dame in die Ecke treiben, dann den weißen König heranführen und zuletzt die Dame für Matt einsetzen.'
+  },
+  {
+    id:'q_vs_q',priority:71,
+    match:function(p){
+      return p.wQ>=1&&p.bQ>=1&&p.wR===0&&p.wB===0&&p.wN===0&&p.bR===0&&p.bB===0&&p.bN===0;
+    },
+    title:'Dame vs Dame',
+    goals:['Damentausch nur wenn die entstehende Unterzahl gewonnen oder remis sicher ist','Königssicherheit zuerst: Schachflucht und Dauerschach des Gegners im Blick','Tempo und Zugzwang — oft entscheidet ein einziges Tempo','Bauern im Damentausch: Freibauer oder Durchbruch nach Tausch kalkulieren'],
+    warnings:['⚠️ Dauerschach und ewige Verfolgung — Remis ist oft drin wenn der schwächere König offen steht','⚠️ Falschen Damentausch — aus Gewinn wird Remis oder Verlust','⚠️ Königsangriffe unterschätzen — eine Dame kann matt drohen sobald der eigene König schwach steht'],
+    tip:'💡 Bei K+D vs K+D zählt meist: wer den gegnerischen König zuerst in Bedrängnis bringt oder den richtigen Tauschzeitpunkt wählt.'
+  },
+  {
     id:'q_vs_alone',priority:70,
     match:function(p){return p.wQ>=1&&p.bQ===0&&p.bR===0&&p.bB===0&&p.bN===0&&p.bP===0;},
     title:'Dame + Bauern vs nackter König',
@@ -1474,7 +1506,7 @@ var ENDGAME_CATALOG = [
     tip:'💡 Box-Methode: Mit Dame ein immer kleiner werdendes Rechteck um den schwarzen König ziehen, dann König einmarschieren lassen.'
   },
   {
-    id:'qp_vs_q',priority:65,
+    id:'qp_vs_q',priority:72,
     match:function(p){return p.wQ>=1&&p.bQ>=1&&p.wP>=1&&p.bP===0;},
     title:'Dame + Bauer vs Dame',
     goals:['Bauer auf die 7. Reihe bringen — das ist das Hauptziel','Dauerschach vermeiden: König nicht am Rand, möglichst zentralisiert','Damentausch erzwingen wenn Bauer weit genug vorgedrungen','Schwarze Dame vom Bauer fernhalten'],
