@@ -456,6 +456,11 @@ function setPawns(n) {
 
 // ── POSITION GENERATOR ────────────────────────────────
 var generating = false;
+// Wie viele zufällige Stellungen maximal probiert werden, bis eine in den CP-Bereich passt.
+// (Früher: 40 — oft zu wenig bei „Schwer“ oder vielen Bauern.)
+var MAX_POSITION_ATTEMPTS = 5000;
+// Stockfish-Tiefe beim Filtern zufälliger Stellungen (höher = genauer, aber langsamer pro Versuch).
+var GENERATOR_STOCKFISH_DEPTH = 18;
 
 function generatePosition() {
   if (!sfReady || generating) return;
@@ -469,8 +474,8 @@ function generatePosition() {
 }
 
 function tryNextPosition(attempt) {
-  if (attempt >= 40) {
-    setGameStatus('Keine passende Stellung gefunden — nochmal!', '');
+  if (attempt >= MAX_POSITION_ATTEMPTS) {
+    setGameStatus('Keine passende Stellung nach ' + MAX_POSITION_ATTEMPTS + ' Versuchen — Schwierigkeit lockern oder erneut klicken.', '');
     var btn = document.getElementById('gen-btn');
     btn.disabled = false;
     btn.textContent = '🎲 Neue Stellung generieren';
@@ -489,7 +494,7 @@ function tryNextPosition(attempt) {
     tryNextPosition(attempt + 1);
     return;
   }
-  evalPosition(fen, 12).then(function(cp) {
+  evalPosition(fen, GENERATOR_STOCKFISH_DEPTH).then(function(cp) {
     var range = DIFF_RANGES[difficulty] || DIFF_RANGES[2];
     if (cp === null || cp < range[0] || cp > range[1]) {
       tryNextPosition(attempt + 1);
