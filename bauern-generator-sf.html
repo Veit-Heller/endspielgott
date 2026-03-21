@@ -69,10 +69,12 @@ h1 span{color:#6B3F1A;}
 .evaldivider{width:3px;background:#fff;border-radius:2px;flex-shrink:0;align-self:stretch;}
 .evalrow{position:relative;overflow:hidden;border-radius:10px;}
 .evalrow.outcome-white-win,.evalrow.outcome-black-win{gap:0;}
-.evalrow.outcome-white-win .evalblk-b{flex:0 !important;opacity:.08;transform:scale(.98);}
+.evalrow.outcome-white-win .evalblk-b{flex:0 0 0 !important;width:0 !important;max-width:0 !important;min-width:0 !important;padding:0 !important;border:0 !important;margin:0 !important;opacity:0;transform:none;overflow:hidden;}
 .evalrow.outcome-white-win .evalblk-w{flex:100 !important;animation:evalWinnerExpand .8s cubic-bezier(.2,.8,.2,1);}
-.evalrow.outcome-black-win .evalblk-w{flex:0 !important;opacity:.08;transform:scale(.98);}
+.evalrow.outcome-black-win .evalblk-w{flex:0 0 0 !important;width:0 !important;max-width:0 !important;min-width:0 !important;padding:0 !important;border:0 !important;margin:0 !important;opacity:0;transform:none;overflow:hidden;}
 .evalrow.outcome-black-win .evalblk-b{flex:100 !important;animation:evalWinnerExpand .8s cubic-bezier(.2,.8,.2,1);}
+.evalrow.outcome-white-win .evalblk-b .evalblk-label,.evalrow.outcome-white-win .evalblk-b .evalblk-score,
+.evalrow.outcome-black-win .evalblk-w .evalblk-label,.evalrow.outcome-black-win .evalblk-w .evalblk-score{display:none;}
 .evalrow.outcome-white-win .evaldivider,.evalrow.outcome-black-win .evaldivider{width:0;opacity:0;}
 .evalrow.outcome-draw .evalblk-b,.evalrow.outcome-draw .evalblk-w{flex:50 !important;animation:evalDrawPulse 1.2s ease-in-out infinite;}
 .evalrow.outcome-draw .evaldivider{background:#fff;width:3px;}
