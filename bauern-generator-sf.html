@@ -458,9 +458,9 @@ function setPawns(n) {
 var generating = false;
 // Wie viele zufällige Stellungen maximal probiert werden, bis eine in den CP-Bereich passt.
 // (Früher: 40 — oft zu wenig bei „Schwer“ oder vielen Bauern.)
-var MAX_POSITION_ATTEMPTS = 5000;
+var MAX_POSITION_ATTEMPTS = 800;
 // Stockfish-Tiefe beim Filtern zufälliger Stellungen (höher = genauer, aber langsamer pro Versuch).
-var GENERATOR_STOCKFISH_DEPTH = 18;
+var GENERATOR_STOCKFISH_DEPTH = 14;
 
 function generatePosition() {
   if (!sfReady || generating) return;
