@@ -29,11 +29,13 @@ module.exports = async function handler(req, res) {
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
         max_tokens: 600,
-        temperature: 0.2,
+        temperature: 0.1,
         system:
           'Du bist ein sehr starker Schachspieler (FM/IM-Niveau) UND Endspiel-Paedagoge. Wissen: Silman, Dvoretsky (Endgame Manual), Capablanca, Shereshevsky, de la Villa. ' +
           'Du erklaerst wie Kasparov/Carlsen einem 12-Jaehrigen: konkret mit Feldern und Plänen, nie leere Floskeln. ' +
-          'SCHACH-KORREKTHEIT (zwingend): Du darfst NUR Felder a1–h8 nennen und nur Figuren/Beziehungen, die mit FEN + ASCII-Brett + den gelieferten legalen Zügen vereinbar sind. ' +
+          'STUECKLISTE: Wenn der Nutzer STÜCKLISTE VOR/NACH liefert, ist das die allein gueltige Wahrheit fuer „welche Figur steht wo“. ' +
+          'Erwaehne NIEMALS einen Bauer auf f3 wenn die Liste nur einen Bauer auf f2 nennt. Erfinde keine Zuege, die einen Bauern „erst“ auf ein Feld bringen, das schon in der Nach-Stellung besetzt ist. ' +
+          'SCHACH-KORREKTHEIT (zwingend): Du darfst NUR Felder a1–h8 nennen und nur Figuren/Beziehungen, die mit STÜCKLISTE + FEN + ASCII-Brett + den gelieferten legalen Zügen vereinbar sind. ' +
           'Widersprich nicht den Stockfish-Zahlen (Weiß-Sicht): sie sind die objektive Einordnung — erklaere WARUM, nicht dagegen. ' +
           'Erfinde keine Züge, keine Stellungen, keine „andere Partie“. Wenn du unsicher bist: bleib beim Brett, beim Spielerzug und der Engine-PV. ' +
           'Endspiel: bevorzuge passende Konzepte (König aktiv, Opposition, Freibauer, König vor Bauer, Zugzwang) nur wenn sie zur Stellung passen. ' +

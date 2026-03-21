@@ -449,6 +449,45 @@ function fenToBoard(fen) {
   return s;
 }
 
+// Explizite Figurenliste aus FEN (einzige erlaubte „Wahrheit“ für Felder — gegen LLM-Halluzinationen)
+function pieceNameDE(ch) {
+  var t = String(ch).toLowerCase();
+  if (t === 'k') return 'König';
+  if (t === 'q') return 'Dame';
+  if (t === 'r') return 'Turm';
+  if (t === 'b') return 'Läufer';
+  if (t === 'n') return 'Springer';
+  if (t === 'p') return 'Bauer';
+  return 'Figur';
+}
+
+function fenToPieceInventory(fen) {
+  var pos = (fen || '').split(' ')[0];
+  if (!pos) return 'Weiß: —\nSchwarz: —';
+  var rows = pos.split('/');
+  var white = [];
+  var black = [];
+  for (var ri = 0; ri < 8; ri++) {
+    var rank = 8 - ri;
+    var col = 0;
+    var row = rows[ri] || '';
+    for (var ci = 0; ci < row.length; ci++) {
+      var ch = row[ci];
+      if (ch >= '1' && ch <= '8') {
+        col += parseInt(ch, 10);
+      } else {
+        var file = String.fromCharCode(97 + col);
+        var sq = file + rank;
+        var isWhite = ch === ch.toUpperCase() && ch !== ch.toLowerCase();
+        var phrase = pieceNameDE(ch) + ' auf ' + sq;
+        if (isWhite) white.push(phrase); else black.push(phrase);
+        col++;
+      }
+    }
+  }
+  return 'Weiß: ' + (white.length ? white.join(', ') : '—') + '\nSchwarz: ' + (black.length ? black.join(', ') : '—');
+}
+
 // difficulty: 1=Leicht(+80..+200), 2=Mittel(+30..+150), 3=Schwer(+10..+80)
 var difficulty = 2;
 var DIFF_RANGES = { 1:[80,200], 2:[30,150], 3:[10,80] };
@@ -1000,6 +1039,8 @@ function loadExplanation() {
   var ctx = lastMoveContext;
   var boardBefore = fenToBoard(ctx.fen);
   var boardAfter  = fenToBoard(ctx.fenAfter);
+  var piecesBefore = fenToPieceInventory(ctx.fen);
+  var piecesAfter  = fenToPieceInventory(ctx.fenAfter);
   var pvStr  = (ctx.pvSAN || []).slice(0, 4).join(' → ');
   var pvHint = pvExampleFromSAN(ctx.pvSAN, 4);
 
@@ -1022,14 +1063,18 @@ function loadExplanation() {
 
   var content =
     'ZWANGSREGELN (Schachkorrektheit):\n' +
-    '- Nutze nur Felder a1–h8. Nenne keine Figuren auf Feldern, die nicht im ASCII-Brett oder in den FENs vorkommen.\n' +
+    '- STÜCKLISTE VOR/NACH ist VERBINDLICH: Jede Figur und jedes Feld, das du erwähnst, muss wortgenau in der passenden Liste vorkommen. Kein „Bauer auf f3“, wenn nur „Bauer auf f2“ steht.\n' +
+    '- Erfinde keine Züge, die einen Bauern „erst auf f2 stellen“ — der Bauer steht schon so, wie die Liste sagt (vor bzw. nach dem Spielerzug).\n' +
+    '- Nutze nur Felder a1–h8. Nenne keine Figuren auf Feldern, die nicht in STÜCKLISTE oder ASCII-Brett vorkommen.\n' +
     '- Der Spielerzug ist genau der genannte SAN/UCI; erfinde keine andere Zugfolge oder Partiegeschichte.\n' +
     '- Stockfish-Bewertungen sind in Weiß-Sicht; widerspreche ihnen nicht — erkläre sie plausibel mit dem Brett.\n' +
     '- Erwähne nur Züge aus den gelieferten legalen Listen oder den explizit genannten SAN/UCI-Zügen.\n' +
-    '- Endspiel-Ideen (Opposition, Freibauer, König vor Bauer, Zugzwang) nur, wenn sie zur konkreten Stellung passen.\n' +
-    '- SELBSTPRUEFUNG (mehrfach, vor dem JSON): Lies summary und detail noch einmal und prüfe JEDEN Satz gegen ASCII vor/nach und FEN. Stimmt Am-Zug? Liegt jede Figur auf dem Feld, das du behauptest? Passt Schlagen/Rochade/Bauer zum Brett? Wenn nein: umschreiben oder weglassen — nichts erfinden.\n\n' +
+    '- Endspiel-Ideen (Opposition, Freibauer, König vor Bauer, Zugzwang, Umwandlung droht) nur, wenn sie zur STÜCKLISTE passen.\n' +
+    '- SELBSTPRUEFUNG (mehrfach, vor dem JSON): Prüfe JEDEN Satz gegen STÜCKLISTE + ASCII. Liegt jede genannte Figur auf dem genannten Feld? Wenn nein: umschreiben oder weglassen.\n\n' +
     'FEN VOR DEM ZUG: ' + ctx.fen +
     '\nFEN NACH DEM SPIELERZUG: ' + ctx.fenAfter +
+    '\n\nSTÜCKLISTE VOR DEM SPIELERZUG (verbindlich):\n' + piecesBefore +
+    '\n\nSTÜCKLISTE NACH DEM SPIELERZUG (verbindlich):\n' + piecesAfter +
     '\n\nBRETT VOR DEM ZUG (Weiß am Zug, ASCII):\n' + boardBefore +
     '\nLegale Züge für Weiß (gekürzt, max. ' + EXPLAIN_LEGAL_MOVES_MAX + '): ' + legalBeforeStr +
     '\n\nSPIELERZUG (Weiß): SAN \"' + ctx.playerMove + '\"' +
