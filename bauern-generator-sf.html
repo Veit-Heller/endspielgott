@@ -1006,12 +1006,13 @@ function loadExplanation() {
     : ('Erkläre WARUM \"' + (ctx.bestMove || '?') + '\" stärker ist als \"' + ctx.playerMove + '\". Nenne konkrete Felder und was durch den Spielerzug schwächer wird.');
 
   var content =
-    'ZWIANGSREGELN (Schachkorrektheit):\n' +
+    'ZWANGSREGELN (Schachkorrektheit):\n' +
     '- Nutze nur Felder a1–h8. Nenne keine Figuren auf Feldern, die nicht im ASCII-Brett oder in den FENs vorkommen.\n' +
     '- Der Spielerzug ist genau der genannte SAN/UCI; erfinde keine andere Zugfolge oder Partiegeschichte.\n' +
     '- Stockfish-Bewertungen sind in Weiß-Sicht; widerspreche ihnen nicht — erkläre sie plausibel mit dem Brett.\n' +
     '- Erwähne nur Züge aus den gelieferten legalen Listen oder den explizit genannten SAN/UCI-Zügen.\n' +
-    '- Endspiel-Ideen (Opposition, Freibauer, König vor Bauer, Zugzwang) nur, wenn sie zur konkreten Stellung passen.\n\n' +
+    '- Endspiel-Ideen (Opposition, Freibauer, König vor Bauer, Zugzwang) nur, wenn sie zur konkreten Stellung passen.\n' +
+    '- SELBSTPRUEFUNG (mehrfach, vor dem JSON): Lies summary und detail noch einmal und prüfe JEDEN Satz gegen ASCII vor/nach und FEN. Stimmt Am-Zug? Liegt jede Figur auf dem Feld, das du behauptest? Passt Schlagen/Rochade/Bauer zum Brett? Wenn nein: umschreiben oder weglassen — nichts erfinden.\n\n' +
     'FEN VOR DEM ZUG: ' + ctx.fen +
     '\nFEN NACH DEM SPIELERZUG: ' + ctx.fenAfter +
     '\n\nBRETT VOR DEM ZUG (Weiß am Zug, ASCII):\n' + boardBefore +
@@ -1034,7 +1035,8 @@ function loadExplanation() {
     '\n\nFORMAT (strikt):' +
     '\nAntworte AUSSCHLIESSLICH mit EINEM JSON-Objekt. Kein Text davor oder danach, keine Markdown-Codefences.' +
     '\nSchema: {\"summary\":\"Genau ein Satz Kernthese.\",\"detail\":\"Zwei kurze Sätze mit Feldern und Konsequenz.\"}' +
-    '\nFeld \"summary\": ein Satz. Feld \"detail\": genau zwei Sätze.';
+    '\nFeld \"summary\": ein Satz. Feld \"detail\": genau zwei Sätze.' +
+    '\nVor dem Absenden: nochmals Plausibilitätscheck — jede Behauptung muss sich im ASCII-Brett (vor/nach) und in den FENs ablesen lassen.';
 
   fetch('/api/explain', {
     method: 'POST',

@@ -37,6 +37,9 @@ module.exports = async function handler(req, res) {
           'Widersprich nicht den Stockfish-Zahlen (Weiß-Sicht): sie sind die objektive Einordnung — erklaere WARUM, nicht dagegen. ' +
           'Erfinde keine Züge, keine Stellungen, keine „andere Partie“. Wenn du unsicher bist: bleib beim Brett, beim Spielerzug und der Engine-PV. ' +
           'Endspiel: bevorzuge passende Konzepte (König aktiv, Opposition, Freibauer, König vor Bauer, Zugzwang) nur wenn sie zur Stellung passen. ' +
+          'PLAUSIBILITAETSPRUEFUNG (vor jeder Antwort, mehrfach): Gehe jeden Satz mental gegen FEN + ASCII-Brett und die legalen Zuglisten. ' +
+          'Stimmt Am-Zug (Weiß/Schwarz)? Liegt jede genannte Figur wirklich auf dem genannten Feld? Geht der beschriebene Zug von dort aus regelkonform? ' +
+          'Passt „schlaegt“/„stellt“ zum Brett nach dem Zug? Wenn auch nur ein Detail nicht passt: Formulierung streichen oder so aendern, dass es exakt zum gelieferten Brett passt — nie raten. ' +
           'Antworte strikt im vom Nutzer verlangten JSON (summary + detail), ohne Markdown-Fences, ohne Text ausserhalb JSON.',
         messages: [{ role: 'user', content: content }]
       })
