@@ -37,7 +37,7 @@ h1 span{color:#6B3F1A;}
 .engbadge.loading{background:#fff3cd;color:#856404;}
 .engbadge.ready{background:#d4edda;color:#155724;}
 .engbadge.error{background:#f8d7da;color:#721c24;}
-.mctr{font-size:12px;font-weight:700;color:#aaa;}
+/* .mctr removed */
 .board-outer{border-radius:14px;overflow:hidden;box-shadow:0 10px 36px rgba(0,0,0,.22);border:4px solid #6B3F1A;display:inline-block;}
 .board-frame{background:linear-gradient(145deg,#9B6B3C,#7A4E24);padding:14px;position:relative;}
 .board-labels-left{position:absolute;left:0;top:14px;width:14px;display:flex;flex-direction:column;}
@@ -83,17 +83,58 @@ h1 span{color:#6B3F1A;}
 @keyframes evalDrawPulse{0%,100%{filter:brightness(1);}50%{filter:brightness(1.08);}}
 /* ── Move rating card ── */
 .move-card{width:100%;background:#fff;border:1px solid #e8e6de;border-radius:14px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.06);}
-.move-card-top{display:flex;align-items:center;gap:0;padding:0;}
-.move-info{flex:1;padding:10px 12px;}
-.rating-label{font-size:13px;font-weight:900;letter-spacing:.02em;}
-.rating-label.great{color:#8B5E3C;} .rating-label.good{color:#6B3F1A;}
-.rating-label.ok{color:#9a6400;} .rating-label.bad{color:#c0392b;} .rating-label.blunder{color:#c0392b;} .rating-label.idle{color:#aaa;}
-.cp-row{display:flex;align-items:center;gap:10px;margin-top:4px;flex-wrap:wrap;}
-.cp-pill{display:flex;align-items:center;gap:4px;font-size:11px;font-weight:800;padding:2px 8px;border-radius:20px;background:#f5f4ef;}
-.cp-pill .cp-label{color:#aaa;font-weight:700;}
-.cp-pill .cp-val{color:#3d3d3a;}
-.cp-pill .cp-val.pos{color:#8B5E3C;} .cp-pill .cp-val.neg{color:#c0392b;}
-.cp-arrow{font-size:14px;color:#ccc;}
+/* move-center removed */
+.move-card-top{display:flex;align-items:stretch;gap:10px;padding:10px 12px;}
+.move-box{flex:1;display:flex;align-items:center;gap:10px;padding:10px 10px;border-radius:12px;border:2px solid #e8e6de;background:linear-gradient(180deg,#fff,#faf7f1);}
+.move-box.best{background:linear-gradient(180deg,#fff,#fff7ec);border-color:#ead9bf;}
+.move-box .mbadge{width:28px;height:28px;border-radius:999px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:12px;flex-shrink:0;border:2px solid #e0ddd6;background:#f5f4ef;color:#888;}
+.move-box .mbadge.best{border-color:#C89020;background:#fff3cd;color:#856404;}
+.move-box .mbadge.great{border-color:#8B5E3C;background:#f3e7dc;color:#6B3F1A;}
+.move-box .mbadge.good{border-color:#6B3F1A;background:#efe2d6;color:#6B3F1A;}
+.move-box .mbadge.ok{border-color:#9a6400;background:#fff3cd;color:#856404;}
+.move-box .mbadge.bad,.move-box .mbadge.blunder{border-color:#c0392b;background:#fde8e8;color:#c0392b;}
+.move-box .mmeta{display:flex;flex-direction:column;gap:2px;min-width:0;}
+.move-box .mlbl{font-size:10px;font-weight:900;letter-spacing:.10em;text-transform:uppercase;color:#aaa;}
+.move-box .mline{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;}
+.move-box .mmove{font-size:16px;font-weight:900;color:#3d3d3a;line-height:1.1;}
+.move-box.best .mmove{color:#6B3F1A;}
+.move-box .mcp{font-size:12px;font-weight:900;color:#888;}
+.move-box .mcp.pos{color:#8B5E3C;}
+.move-box .mcp.neg{color:#c0392b;}
+.undo-mini{width:46px;display:flex;align-items:center;justify-content:center;border-radius:12px;border:2px solid #e0ddd6;background:#fff;color:#888;font-weight:900;cursor:pointer;transition:transform .1s;}
+.undo-mini:active{transform:scale(.96);}
+.undo-mini:disabled{opacity:.5;cursor:not-allowed;}
+.sit-panel{width:100%;border-radius:16px;overflow:hidden;border:1px solid #e8e6de;box-shadow:0 1px 4px rgba(0,0,0,.06);background:#fff;cursor:pointer;}
+.sit-icon{width:28px;height:28px;border-radius:10px;display:flex;align-items:center;justify-content:center;
+  background:#f5f4ef;border:1px solid #e8e6de;color:#6B3F1A;font-size:16px;flex-shrink:0;}
+.sit-body{padding:12px 14px;display:flex;flex-direction:column;gap:10px;}
+.sit-summary{display:flex;flex-direction:column;align-items:center;gap:8px;padding:14px 14px 14px;text-align:center;background:#fff;}
+.sit-summary .stitle{display:flex;align-items:center;gap:10px;color:#3d3d3a;font-weight:900;font-size:14px;line-height:1.15;margin-bottom:2px;}
+.sit-summary .sgoalLbl{font-size:10px;font-weight:900;letter-spacing:.14em;text-transform:uppercase;color:#9a6400;margin-top:6px;}
+.sit-summary .sgoal{font-size:13px;font-weight:900;color:#3d3d3a;max-width:380px;line-height:1.25;margin-top:1px;}
+.sit-summary .sinfo{width:32px;height:32px;border-radius:12px;display:flex;align-items:center;justify-content:center;
+  background:#f5f4ef;border:1px solid #e8e6de;color:#6B3F1A;font-weight:900;margin-top:8px;}
+.sit-collapsed .sit-body{display:none;}
+.sit-expanded .sit-summary{display:none;}
+.sit-section{display:flex;flex-direction:column;gap:8px;}
+.sit-sec-title{display:flex;align-items:center;gap:8px;font-size:10px;font-weight:900;letter-spacing:.12em;text-transform:uppercase;color:#8a7d70;}
+.sit-list{display:flex;flex-direction:column;gap:6px;}
+.sit-item{display:flex;gap:10px;align-items:flex-start;padding:8px 10px;border-radius:12px;background:#fbfaf7;border:1px solid #f0ede5;}
+.sit-item:last-child{margin-bottom:0;}
+.sit-bullet{width:18px;height:18px;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  background:#f1e7d9;border:1px solid #ead9bf;color:#6B3F1A;font-size:12px;font-weight:900;line-height:1;}
+.sit-text{font-size:12px;font-weight:800;color:#3d3d3a;line-height:1.35;}
+.sit-warn-wrap{border-radius:14px;overflow:hidden;border:1px solid #f2c7c7;background:linear-gradient(180deg,#fff, #fff7f7);}
+.sit-warn-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;cursor:pointer;user-select:none;}
+.sit-warn-head .left{display:flex;align-items:center;gap:8px;}
+.sit-warn-pill{width:20px;height:20px;border-radius:7px;display:flex;align-items:center;justify-content:center;background:#fde8e8;border:1px solid #f2c7c7;color:#c0392b;font-weight:900;font-size:12px;}
+.sit-warn-title{font-size:10px;font-weight:900;letter-spacing:.12em;text-transform:uppercase;color:#c0392b;}
+.sit-warn-body{padding:0 12px 12px;display:none;}
+.sit-warn-item{font-size:12px;font-weight:800;color:#8f2c2c;line-height:1.35;padding:7px 0;border-top:1px dashed rgba(192,57,43,.25);}
+.sit-tip{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:14px;background:linear-gradient(135deg,#FFF9F0,#fff);
+  border:1px solid #f0d9a0;}
+.sit-tip .spark{width:20px;height:20px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:#fff3cd;border:1px solid #f0d9a0;color:#9a6400;font-weight:900;}
+.sit-tip .txt{font-size:12px;font-weight:800;color:#6B3F1A;line-height:1.35;}
 .explain-btn{margin:0 10px 10px;width:calc(100% - 20px);padding:8px;border-radius:10px;font-family:'Nunito',sans-serif;font-weight:800;font-size:12px;border:1.5px solid #e0ddd6;background:#f9f8f4;color:#888;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:all .15s;}
 .explain-btn:hover{border-color:#8B5E3C;color:#8B5E3C;background:#fdf7ef;}
 .explain-btn:disabled{opacity:.5;cursor:not-allowed;}
@@ -122,7 +163,6 @@ input[type=range]{flex:1;accent-color:#8B5E3C;}
 </head>
 <body>
 <div id="app">
-  <h1>♟ Bauern<span>endspiel</span></h1>
 
   <div class="board-outer" style="align-self:center;">
     <div class="board-frame">
@@ -150,20 +190,31 @@ input[type=range]{flex:1;accent-color:#8B5E3C;}
 
   <div class="move-card" id="move-card">
     <div class="move-card-top">
-      <div class="move-info" style="padding:10px 14px;">
-        <div class="rating-label idle" id="rating-label">Ziehe eine Figur</div>
-        <div class="cp-row" id="cp-row">
-          <span class="cp-pill"><span class="cp-label">Dein Zug</span>&nbsp;<span class="cp-val" id="cp-player-move" style="color:#3d3d3a;font-size:12px;">—</span>&nbsp;<span class="cp-val" id="cp-player">—</span></span>
-          <span class="cp-arrow">→</span>
-          <span class="cp-pill"><span class="cp-label">Bester Zug</span>&nbsp;<span class="cp-val" id="cp-best-move" style="color:#3d3d3a;font-size:12px;">—</span>&nbsp;<span class="cp-val" id="cp-best">—</span></span>
+      <div class="move-box" id="box-player">
+        <div class="mbadge" id="badge-player">—</div>
+        <div class="mmeta">
+          <div class="mlbl">Dein Zug (Weiß)</div>
+          <div class="mline">
+            <div class="mmove" id="mv-player">—</div>
+            <div class="mcp" id="cp-player">—</div>
+          </div>
         </div>
-        <div id="eval-note" style="display:none;font-size:11px;font-weight:600;color:#7a6f62;line-height:1.4;margin-top:6px;max-width:520px;"></div>
       </div>
-      <div class="move-turn" style="display:flex;align-items:center;gap:9px;padding:7px 13px;border-left:1px solid #e8e6de;">
-        <div id="turn-dot" style="width:6px;height:6px;border-radius:50%;background:#ccc;box-shadow:none;animation:none;"></div>
-        <span class="mctr" id="mctr" style="font-family:'Nunito',sans-serif;font-size:11px;font-weight:800;color:#aaa;letter-spacing:.06em;text-transform:uppercase;">ZUG 1</span>
+
+      <div class="move-box best" id="box-best">
+        <div class="mbadge best" id="badge-best">★</div>
+        <div class="mmeta">
+          <div class="mlbl">Bester Zug</div>
+          <div class="mline">
+            <div class="mmove" id="mv-best">—</div>
+            <div class="mcp" id="cp-best">—</div>
+          </div>
+        </div>
       </div>
+
+      <button class="undo-mini" id="undo-mini" onclick="undoLast()" title="Zurück">↩</button>
     </div>
+    <div id="eval-note" style="display:none;font-size:11px;font-weight:600;color:#7a6f62;line-height:1.4;margin:-4px 12px 10px;max-width:520px;"></div>
     <button class="explain-btn" id="explain-btn" onclick="loadExplanation()" style="display:none">
       🦉 Tobold erklärt warum
     </button>
@@ -171,23 +222,44 @@ input[type=range]{flex:1;accent-color:#8B5E3C;}
   </div>
 
   <!-- Endgame situation panel (zwischen Züge und Buttons) -->
-  <div id="situation-panel" style="display:none;width:100%;background:#fff;border:1px solid #e8e6de;border-radius:14px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.06);">
-    <div style="display:flex;align-items:center;gap:8px;padding:10px 14px;background:#1a0e06;cursor:pointer;" onclick="toggleSituation()">
-      <span style="font-size:16px;">♚</span>
-      <span id="sit-title" style="font-family:'Nunito',sans-serif;font-weight:800;font-size:13px;color:#F0C040;flex:1;"></span>
-      <span id="sit-arrow" style="font-size:12px;color:#F0C040;font-weight:700;">▼</span>
+  <div class="sit-panel sit-collapsed" id="situation-panel" style="display:none;" onclick="toggleSituation()">
+    <!-- Collapsed summary (centered) -->
+    <div class="sit-summary" id="sit-summary">
+      <div class="stitle">
+        <span class="sit-icon" style="width:26px;height:26px;border-radius:10px;">♚</span>
+        <span id="sit-title-2"></span>
+      </div>
+      <div class="sgoalLbl">Dein Ziel:</div>
+      <div class="sgoal" id="sit-goal-one">—</div>
+      <div class="sinfo" aria-hidden="true">i</div>
     </div>
-    <div id="sit-body" style="padding:12px 14px;display:flex;flex-direction:column;gap:10px;">
-      <div id="sit-goals"></div>
-      <div id="sit-warnings" style="display:none;"></div>
-      <button onclick="toggleWarnings()" id="warn-btn" style="align-self:flex-start;padding:5px 12px;border-radius:8px;font-family:'Nunito',sans-serif;font-weight:800;font-size:11px;border:1.5px solid #e0ddd6;background:#f9f8f4;color:#888;cursor:pointer;">⚠️ Häufige Fehler zeigen</button>
-      <div id="sit-tip" style="font-size:12px;font-weight:700;color:#8B5E3C;background:#FFF9F0;border-radius:8px;padding:8px 10px;border-left:3px solid #F0C040;"></div>
+
+    <div class="sit-body" id="sit-body">
+      <div class="sit-section">
+        <div class="sit-sec-title">Plan</div>
+        <div class="sit-list" id="sit-goals"></div>
+      </div>
+
+      <div class="sit-warn-wrap">
+        <div class="sit-warn-head" onclick="toggleWarnings(); event.stopPropagation();">
+          <div class="left">
+            <div class="sit-warn-pill">!</div>
+            <div class="sit-warn-title" id="warn-btn">Häufige Fehler zeigen</div>
+          </div>
+          <div class="sit-arrow" id="warn-arrow">▼</div>
+        </div>
+        <div class="sit-warn-body" id="sit-warnings"></div>
+      </div>
+
+      <div class="sit-tip">
+        <div class="spark">✦</div>
+        <div class="txt" id="sit-tip"></div>
+      </div>
     </div>
   </div>
 
   <div class="btnrow">
     <button class="btn btnp" id="gen-btn" onclick="generatePosition()" disabled>⏳ Stockfish lädt…</button>
-    <button class="btn btns" onclick="undoLast()">↩ Zurück</button>
   </div>
 
   <!-- game status panel removed (requested) -->
@@ -304,6 +376,7 @@ var PSVG = {
 var sf = null, sfReady = false;
 var pendingResolve = null, pendingLines = [];
 var skillLevel = 4, numPawns = 2;
+var sfQueue = Promise.resolve(); // serialize Stockfish requests (Worker is single-flight)
 
 function initStockfish() {
   try {
@@ -346,15 +419,21 @@ function initStockfish() {
 // Returns Promise<{bestmove, lines}>
 // cp in lines is ALWAYS from side-to-move perspective
 function sfSearch(fen, depth, skill) {
-  return new Promise(function(resolve) {
-    if (!sfReady || !sf) { resolve(null); return; }
-    pendingResolve = resolve;
-    pendingLines = [];
-    sf.postMessage('ucinewgame');
-    if (skill !== null) sf.postMessage('setoption name Skill Level value ' + skill);
-    sf.postMessage('position fen ' + fen);
-    sf.postMessage('go depth ' + depth);
+  sfQueue = sfQueue.then(function() {
+    return new Promise(function(resolve) {
+      if (!sfReady || !sf) { resolve(null); return; }
+      pendingResolve = resolve;
+      pendingLines = [];
+      sf.postMessage('ucinewgame');
+      if (skill !== null) sf.postMessage('setoption name Skill Level value ' + skill);
+      sf.postMessage('position fen ' + fen);
+      sf.postMessage('go depth ' + depth);
+    });
+  }).catch(function() {
+    // keep queue alive even after errors
+    return null;
   });
+  return sfQueue;
 }
 
 function parseCPsideToMove(lines) {
@@ -768,7 +847,6 @@ function startGame(fen, initialCp) {
   setGameStatus('', '');
   resetRatingCard();
   updateSituation();
-  document.getElementById('mctr').textContent = 'ZUG 1';
   var cpStr = (initialCp / 100).toFixed(2);
   var tips = [
     'Aktiviere deinen König — er ist im Endspiel deine stärkste Figur!',
@@ -846,7 +924,6 @@ function handleClick(sq) {
         sel = null;
         mvCnt++;
         hist.push({ fen: game.fen() });
-        document.getElementById('mctr').textContent = 'ZUG ' + mvCnt;
         renderBoard();
         updateSituation();
         if (!checkEnd()) afterMove(fenBefore, res);
@@ -860,19 +937,8 @@ function handleClick(sq) {
 }
 
 function setTurnDot(yourTurn) {
-  var dot = document.getElementById('turn-dot');
-  if (!dot) return;
-  var mctr = document.getElementById('mctr');
   if (yourTurn) {
-    dot.style.background = '#C89020';
-    dot.style.boxShadow = '0 0 0 2px #f3dfb8';
-    dot.style.animation = 'glow 1.4s ease-in-out infinite';
-    if (mctr) mctr.style.color = '#6B3F1A';
   } else {
-    dot.style.background = '#ccc';
-    dot.style.boxShadow = 'none';
-    dot.style.animation = 'none';
-    if (mctr) mctr.style.color = '#aaa';
   }
 }
 
@@ -881,23 +947,28 @@ function afterMove(fenBefore, move) {
   busy = true;
   setTurnDot(false);
 
-  // evalFull on fenBefore: gives best possible CP and best move from this position
-  // evalFull on fenAfter:  gives actual CP after player's move
-  // Both use toWhiteCP internally so both are white-perspective
+  // Option 2: Bewertungen immer als Leaf-Eval NACH dem jeweiligen Zug
+  // - Bestzug (SAN/UCI, PV) kommt aus evalFull(fenBefore)
+  // - CP-Werte kommen aus evalPosition(fenAfterPlayer) und evalPosition(fenAfterBest)
   var MOVE_ANALYSIS_DEPTH = 16;
-  evalFull(fenBefore, MOVE_ANALYSIS_DEPTH).then(function(sfBest) {
-    var cpBeforeEval = sfBest ? sfBest.cp : 0;
-    var bestUci = sfBest ? sfBest.bestmove : null;
+  var fenAfterPlayer = game.fen();
 
-    evalFull(game.fen(), MOVE_ANALYSIS_DEPTH).then(function(sfAfter) {
-      var cpAfterActual = sfAfter ? sfAfter.cp : 0;
-      var isBestMove = !sfBest || !sfBest.bestmove ||
-        sfBest.bestmove.slice(0, 4) === (move.from + move.to);
+  Promise.all([
+    evalFull(fenBefore, MOVE_ANALYSIS_DEPTH),       // best move + pv (root)
+    evalPosition(fenBefore, MOVE_ANALYSIS_DEPTH),   // cp before (optional context)
+    evalPosition(fenAfterPlayer, MOVE_ANALYSIS_DEPTH) // cp after player (leaf)
+  ]).then(function(results) {
+      var sfBest = results[0];
+      var cpBeforeEval = (results[1] === null || results[1] === undefined) ? 0 : results[1];
+      var cpAfterActual = (results[2] === null || results[2] === undefined) ? 0 : results[2];
 
-      setEval(cpAfterActual);
-
+      var bestUci = sfBest ? sfBest.bestmove : null;
       var bestSAN = sfBest ? sfBest.bestSAN : null;
       var pvSAN   = sfBest ? sfBest.pvSAN   : [];
+
+      var isBestMove = !bestUci || bestUci.slice(0, 4) === (move.from + move.to);
+
+      setEval(cpAfterActual);
 
       function scheduleTobold() {
         // Important: start Stockfish search AFTER all additional evaluations are done.
@@ -933,10 +1004,10 @@ function afterMove(fenBefore, move) {
 
       // Compute evaluation after the Engine's best move
       if (!bestUci) {
-        var cpBestAfterEval = cpBeforeEval;
+        var cpBestAfterEval = cpAfterActual; // keine Bestzug-Nachstellung verfügbar → neutral
         var cpLoss = Math.max(0, cpBestAfterEval - cpAfterActual);
         askClaudeForFeedback(
-          fenBefore, game.fen(), move.san, move.from + move.to + (move.promotion || ''), bestSAN, null,
+          fenBefore, fenAfterPlayer, move.san, move.from + move.to + (move.promotion || ''), bestSAN, null,
           cpBeforeEval, cpAfterActual, cpBestAfterEval,
           cpAfterActual - cpBestAfterEval, cpLoss,
           isBestMove, pvSAN
@@ -968,10 +1039,10 @@ function afterMove(fenBefore, move) {
         }
 
         if (!fenAfterBest) {
-          var cpBestAfterEval = cpBeforeEval;
+          var cpBestAfterEval = cpAfterActual;
           var cpLoss = Math.max(0, cpBestAfterEval - cpAfterActual);
           askClaudeForFeedback(
-            fenBefore, game.fen(), move.san, move.from + move.to + (move.promotion || ''), bestSAN, bestUci,
+            fenBefore, fenAfterPlayer, move.san, move.from + move.to + (move.promotion || ''), bestSAN, bestUci,
             cpBeforeEval, cpAfterActual, cpBestAfterEval,
             cpAfterActual - cpBestAfterEval, cpLoss,
             isBestMove, pvSAN
@@ -979,10 +1050,10 @@ function afterMove(fenBefore, move) {
           scheduleTobold();
         } else {
           evalPosition(fenAfterBest, MOVE_ANALYSIS_DEPTH).then(function(cpBestAfterEval) {
-            if (cpBestAfterEval === null || cpBestAfterEval === undefined) cpBestAfterEval = cpBeforeEval;
+            if (cpBestAfterEval === null || cpBestAfterEval === undefined) cpBestAfterEval = cpAfterActual;
             var cpLoss = Math.max(0, cpBestAfterEval - cpAfterActual);
             askClaudeForFeedback(
-              fenBefore, game.fen(), move.san, move.from + move.to + (move.promotion || ''), bestSAN, bestUci,
+              fenBefore, fenAfterPlayer, move.san, move.from + move.to + (move.promotion || ''), bestSAN, bestUci,
               cpBeforeEval, cpAfterActual, cpBestAfterEval,
               cpAfterActual - cpBestAfterEval, cpLoss,
               isBestMove, pvSAN
@@ -991,7 +1062,6 @@ function afterMove(fenBefore, move) {
           });
         }
       }
-    });
   });
 }
 
@@ -1031,15 +1101,16 @@ function cpStr(cp) {
 
 function resetRatingCard() {
   lastMoveContext = null;
-  document.getElementById('rating-label').className = 'rating-label idle';
-  document.getElementById('rating-label').textContent = 'Ziehe eine Figur';
-  document.getElementById('cp-player-move').textContent = '—';
-  document.getElementById('cp-player').textContent = '—';
-  document.getElementById('cp-player').className = 'cp-val';
-  document.getElementById('cp-best-move').textContent = '—';
-  document.getElementById('cp-best-move').style.color = '#3d3d3a';
-  document.getElementById('cp-best').textContent = '—';
-  document.getElementById('cp-best').className = 'cp-val';
+  var mvPl = document.getElementById('mv-player');
+  var mvBst = document.getElementById('mv-best');
+  var cpPl = document.getElementById('cp-player');
+  var cpBst = document.getElementById('cp-best');
+  var bdPl = document.getElementById('badge-player');
+  if (mvPl) mvPl.textContent = '—';
+  if (mvBst) mvBst.textContent = '—';
+  if (cpPl) { cpPl.textContent = '—'; cpPl.className = 'mcp'; }
+  if (cpBst) { cpBst.textContent = '—'; cpBst.className = 'mcp'; }
+  if (bdPl) { bdPl.textContent = '—'; bdPl.className = 'mbadge'; }
   var en = document.getElementById('eval-note');
   if (en) { en.style.display = 'none'; en.textContent = ''; }
   document.getElementById('explain-btn').style.display = 'none';
@@ -1049,32 +1120,33 @@ function resetRatingCard() {
 
 function setMoveRating(ratingKey, cpPlayer, cpBestMove, playerMove, bestMove, evalNote) {
   var r = RATINGS[ratingKey] || RATINGS.ok;
-  var label = document.getElementById('rating-label');
+  var mvPl = document.getElementById('mv-player');
+  var mvBst = document.getElementById('mv-best');
   var cpPl  = document.getElementById('cp-player');
   var cpBst = document.getElementById('cp-best');
-  var movePl  = document.getElementById('cp-player-move');
-  var moveBst = document.getElementById('cp-best-move');
+  var bdPl  = document.getElementById('badge-player');
   var btn   = document.getElementById('explain-btn');
   var box   = document.getElementById('explain-box');
   var noteEl = document.getElementById('eval-note');
 
-  label.className = 'rating-label ' + r.cls;
-  label.textContent = r.icon + ' ' + r.label;
+  // Player box
+  if (mvPl) mvPl.textContent = playerMove || '—';
+  if (bdPl) {
+    bdPl.textContent = r.icon;
+    bdPl.className = 'mbadge ' + r.cls;
+  }
+  if (cpPl) {
+    cpPl.textContent = cpStr(cpPlayer);
+    cpPl.className = 'mcp' + (cpPlayer >= 0 ? ' pos' : ' neg');
+  }
 
-  // Player move + CP
-  movePl.textContent = playerMove || '—';
-  movePl.style.fontWeight = '900';
-  movePl.style.color = '#3d3d3a';
-  cpPl.textContent  = cpStr(cpPlayer);
-  cpPl.className    = 'cp-val' + (cpPlayer >= 0 ? ' pos' : ' neg');
-
-  // Best move + CP
+  // Best box
   var isBest = !bestMove || bestMove === playerMove;
-  moveBst.textContent = isBest ? '✓ ' + (playerMove||'—') : (bestMove || '—');
-  moveBst.style.fontWeight = '900';
-  moveBst.style.color = isBest ? '#8B5E3C' : '#c0392b';
-  cpBst.textContent = cpStr(cpBestMove);
-  cpBst.className   = 'cp-val' + (cpBestMove >= 0 ? ' pos' : ' neg');
+  if (mvBst) mvBst.textContent = isBest ? (playerMove || '—') : (bestMove || '—');
+  if (cpBst) {
+    cpBst.textContent = cpStr(cpBestMove);
+    cpBst.className = 'mcp' + (cpBestMove >= 0 ? ' pos' : ' neg');
+  }
 
   btn.style.display = 'block';
   btn.disabled = false;
@@ -1108,8 +1180,8 @@ function setGameStatus(msg, type) {
 }
 
 function setRatingThinking() {
-  var label = document.getElementById('rating-label');
-  label.className = 'rating-label idle'; label.textContent = 'SF18 analysiert…';
+  var bdPl = document.getElementById('badge-player');
+  if (bdPl) { bdPl.textContent = '…'; bdPl.className = 'mbadge'; }
 }
 
 // KI-Erklärung: Token sparen + robustes JSON-Parsing
@@ -1282,7 +1354,7 @@ function askClaudeForFeedback(fen, fenAfter, playerMove, playerUci, bestMove, be
   if (!isBestMove && cpAfterActual != null && cpBestAfterEval != null &&
       cpAfterActual > cpBestAfterEval + 20) {
     evalNote = 'Hinweis: Deine Stellung wird hier höher bewertet als die nach dem Engine-Zug. ' +
-      '„Bester Zug“ kommt von der Suche an der Wurzel, die Zahlen daneben von je einer kurzen Nachanalyse — das kann bei Tiefe 16 kurz auseinanderlaufen.';
+      'Beide Zahlen sind Leaf-Bewertungen (nach dem jeweiligen Zug). Bei begrenzter Tiefe können solche Ausreißer trotzdem kurz auftreten.';
   }
   setMoveRating(ratingKey, cpAfterActual, cpBestAfterEval, playerMove, bestMove, evalNote);
 }
@@ -1398,7 +1470,6 @@ function undoLast() {
   sel = null; lastMv = null; busy = false;
   setEvalOutcome(null);
   mvCnt = Math.max(1, mvCnt - 1);
-  document.getElementById('mctr').textContent = 'ZUG ' + mvCnt;
   renderBoard();
   setGameStatus('', '');
   resetRatingCard();
@@ -1415,6 +1486,7 @@ var ENDGAME_CATALOG = [
     match:function(p){return p.wP===1&&p.bP===0&&noOther(p)&&(p.wPfiles[0]===0||p.wPfiles[0]===7);},
     title:'König + Randbauer vs König',
     goals:['König auf Schlüsselfelder b7/a7 bringen (bei a-Bauer)','Schwarzen König aus der Ecke a8/b8 heraushalten','Vorsicht: Patt! Nie Bauer vorrücken wenn schwarzer König auf a8 und kein Ausweg'],
+    goalOne:'König auf das Schlüsselfeld vor den Randbauern bringen (b7/a7).',
     warnings:['⚠️ Randbauer (a/h) gewinnt NUR wenn König b7/a7 besetzt','⚠️ b7+ wenn schwarzer König auf a8 = sofortiges PATT → Remis!','⚠️ Schwarzer König auf a8 + Weißer König auf a6 = immer Remis'],
     tip:'💡 Randbauern führen oft zu Patt. Der schwarze König versteckt sich in der Ecke — du kannst ihn nicht herausschlagen.'
   },
@@ -1423,6 +1495,7 @@ var ENDGAME_CATALOG = [
     match:function(p){return p.wP===1&&p.bP===0&&noOther(p);},
     title:'König + Bauer vs König',
     goals:['König auf die 6. Reihe VOR den Bauern bringen (Ke6 bei e-Bauer)','Opposition gewinnen: Könige direkt gegenüber, 1 Feld Abstand, Gegner am Zug','Schlüsselfelder besetzen — 2 Felder vor dem Bauern (e-Bauer → d6, e6, f6)','Erst dann: Bauer vorrücken'],
+    goalOne:'König vor den Bauern auf die 6. Reihe bringen und Opposition halten.',
     warnings:['⚠️ Bauer zu früh vorschieben ohne König davor = Remis!','⚠️ König hinter dem Bauern verliert die Opposition','⚠️ Bauer auf 7. Reihe ohne König davor kann Patt sein'],
     tip:'💡 König MUSS auf die 6. Reihe vor den Bauern. Dann ist Sieg garantiert — egal was Schwarz macht.'
   },
@@ -1447,6 +1520,7 @@ var ENDGAME_CATALOG = [
     match:function(p){return p.wP>=1&&p.bP>=1&&noOther(p)&&p.wP===p.bP;},
     title:'Symmetrisches Bauernendspiel',
     goals:['Opposition gewinnen — bestimmt wer als erstes einbricht','Durchbruch berechnen: Bauernopfer um Freibauern zu schaffen','König zentralisieren — aktiver König gewinnt','Fernopposition: ungerade Abstände zwischen den Königen bevorzugen'],
+    goalOne:'Opposition gewinnen und als Erster mit dem König einbrechen.',
     warnings:['⚠️ Bauernschwächungen ohne Gegenleistung vermeiden','⚠️ Zugzwang-Fallen (Minenfelder) vor dem Einmarsch berechnen','⚠️ Symmetrie täuscht — wer am Zug ist entscheidet alles'],
     tip:'💡 In symmetrischen Stellungen gewinnt wessen König zuerst auf die 5. Reihe des Gegners einbricht.'
   },
@@ -1546,18 +1620,21 @@ function updateSituation(){
   var panel=document.getElementById('situation-panel');
   if(!sit){panel.style.display='none';return;}
   panel.style.display='block';
-  document.getElementById('sit-title').textContent=sit.title;
+  var t2=document.getElementById('sit-title-2');
+  if(t2) t2.textContent=sit.title;
+  var g1=document.getElementById('sit-goal-one');
+  if(g1) g1.textContent=(sit.goalOne || (sit.goals && sit.goals[0]) || '—');
 
   // Goals
   var gl=document.getElementById('sit-goals');
   gl.innerHTML=sit.goals.map(function(g){
-    return '<div style="font-size:12px;font-weight:700;color:#3d3d3a;padding:3px 0;border-bottom:0.5px solid #f0ede5;">'+g+'</div>';
+    return '<div class="sit-item"><div class="sit-bullet">✓</div><div class="sit-text">'+g+'</div></div>';
   }).join('');
 
   // Warnings
   var wl=document.getElementById('sit-warnings');
   wl.innerHTML=sit.warnings.map(function(w){
-    return '<div style="font-size:12px;font-weight:700;color:#c0392b;padding:3px 0;">'+w+'</div>';
+    return '<div class="sit-warn-item">'+w+'</div>';
   }).join('');
 
   // Tip
@@ -1566,19 +1643,30 @@ function updateSituation(){
   // Reset warnings visibility
   warnOpen=false;
   wl.style.display='none';
-  document.getElementById('warn-btn').textContent='⚠️ Häufige Fehler zeigen';
+  var wbtn=document.getElementById('warn-btn');
+  if(wbtn) wbtn.textContent='Häufige Fehler zeigen';
+  var war=document.getElementById('warn-arrow');
+  if(war) war.textContent='▼';
 }
 
 function toggleSituation(){
   sitOpen=!sitOpen;
-  document.getElementById('sit-body').style.display=sitOpen?'flex':'none';
-  document.getElementById('sit-arrow').textContent=sitOpen?'▼':'▶';
+  var panel=document.getElementById('situation-panel');
+  var body=document.getElementById('sit-body');
+  if(panel){
+    panel.classList.toggle('sit-expanded', sitOpen);
+    panel.classList.toggle('sit-collapsed', !sitOpen);
+  }
+  if(body) body.style.display=sitOpen?'flex':'none';
 }
 
 function toggleWarnings(){
   warnOpen=!warnOpen;
   document.getElementById('sit-warnings').style.display=warnOpen?'block':'none';
-  document.getElementById('warn-btn').textContent=warnOpen?'▲ Ausblenden':'⚠️ Häufige Fehler zeigen';
+  var wbtn=document.getElementById('warn-btn');
+  if(wbtn) wbtn.textContent=warnOpen?'Häufige Fehler ausblenden':'Häufige Fehler zeigen';
+  var war=document.getElementById('warn-arrow');
+  if(war) war.textContent=warnOpen?'▲':'▼';
 }
 
 // ── INIT ──────────────────────────────────────────────
