@@ -87,20 +87,53 @@ h1 span{color:#6B3F1A;}
 .move-card-top{display:flex;align-items:stretch;gap:10px;padding:10px 12px;}
 .move-box{flex:1;display:flex;align-items:center;gap:10px;padding:10px 10px;border-radius:12px;border:2px solid #e8e6de;background:linear-gradient(180deg,#fff,#faf7f1);}
 .move-box.best{background:linear-gradient(180deg,#fff,#fff7ec);border-color:#ead9bf;}
-.move-box .mbadge{width:28px;height:28px;border-radius:999px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:12px;flex-shrink:0;border:2px solid #e0ddd6;background:#f5f4ef;color:#888;}
-.move-box .mbadge.best{border-color:#C89020;background:#fff3cd;color:#856404;}
-.move-box .mbadge.great{border-color:#8B5E3C;background:#f3e7dc;color:#6B3F1A;}
-.move-box .mbadge.good{border-color:#6B3F1A;background:#efe2d6;color:#6B3F1A;}
-.move-box .mbadge.ok{border-color:#9a6400;background:#fff3cd;color:#856404;}
-.move-box .mbadge.bad,.move-box .mbadge.blunder{border-color:#c0392b;background:#fde8e8;color:#c0392b;}
+/* rating badges removed */
 .move-box .mmeta{display:flex;flex-direction:column;gap:2px;min-width:0;}
 .move-box .mlbl{font-size:10px;font-weight:900;letter-spacing:.10em;text-transform:uppercase;color:#aaa;}
 .move-box .mline{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;}
 .move-box .mmove{font-size:16px;font-weight:900;color:#3d3d3a;line-height:1.1;}
 .move-box.best .mmove{color:#6B3F1A;}
-.move-box .mcp{font-size:12px;font-weight:900;color:#888;}
-.move-box .mcp.pos{color:#8B5E3C;}
-.move-box .mcp.neg{color:#c0392b;}
+.move-box .mscore{display:inline-flex;align-items:center;gap:8px;}
+.move-box .mcp{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-width:64px;
+  font-size:13px;
+  font-weight:950;
+  letter-spacing:.02em;
+  padding:6px 10px;
+  border-radius:12px;
+  border:1px solid #e8e6de;
+  background:#f5f4ef;
+  box-shadow:0 1px 0 rgba(0,0,0,.04);
+}
+/* Greift die Eval-Balken-Optik auf:
+   - pos: „Weiß“-Block (hell)
+   - neg: „Schwarz“-Block (dunkel + Gold) */
+.move-box .mcp.pos{
+  color:#3d3d3a;
+  border-color:#d8d3c7;
+  background:linear-gradient(180deg,#f2f0ea,#e8e6de);
+}
+.move-box .mcp.neg{
+  color:#F0C040;
+  border-color:#2a2118;
+  background:linear-gradient(180deg,#3f3327,#3a2e22);
+}
+.mini-eval{
+  width:10px;
+  height:34px;
+  border-radius:999px;
+  overflow:hidden;
+  border:1px solid #e8e6de;
+  background:#fff;
+  display:flex;
+  flex-direction:column;
+}
+.mini-eval .w{background:#e8e6de;flex:50;}
+.mini-eval .div{height:2px;background:#fff;flex:0 0 2px;}
+.mini-eval .b{background:#3a2e22;flex:50;}
 .undo-mini{width:46px;display:flex;align-items:center;justify-content:center;border-radius:12px;border:2px solid #e0ddd6;background:#fff;color:#888;font-weight:900;cursor:pointer;transition:transform .1s;}
 .undo-mini:active{transform:scale(.96);}
 .undo-mini:disabled{opacity:.5;cursor:not-allowed;}
@@ -191,23 +224,35 @@ input[type=range]{flex:1;accent-color:#8B5E3C;}
   <div class="move-card" id="move-card">
     <div class="move-card-top">
       <div class="move-box" id="box-player">
-        <div class="mbadge" id="badge-player">—</div>
         <div class="mmeta">
-          <div class="mlbl">Dein Zug (Weiß)</div>
+          <div class="mlbl">Dein Zug</div>
           <div class="mline">
             <div class="mmove" id="mv-player">—</div>
-            <div class="mcp" id="cp-player">—</div>
+            <div class="mscore">
+              <div class="mcp" id="cp-player">—</div>
+              <div class="mini-eval" aria-hidden="true">
+                <div class="w" id="mini-w-player" style="flex:50;"></div>
+                <div class="div"></div>
+                <div class="b" id="mini-b-player" style="flex:50;"></div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
       <div class="move-box best" id="box-best">
-        <div class="mbadge best" id="badge-best">★</div>
         <div class="mmeta">
           <div class="mlbl">Bester Zug</div>
           <div class="mline">
             <div class="mmove" id="mv-best">—</div>
-            <div class="mcp" id="cp-best">—</div>
+            <div class="mscore">
+              <div class="mcp" id="cp-best">—</div>
+              <div class="mini-eval" aria-hidden="true">
+                <div class="w" id="mini-w-best" style="flex:50;"></div>
+                <div class="div"></div>
+                <div class="b" id="mini-b-best" style="flex:50;"></div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -1070,14 +1115,7 @@ function afterMove(fenBefore, move) {
 // Stored for the explain button
 var lastMoveContext = null;
 
-var RATINGS = {
-  best:    { cls: 'great',   icon: '★',  label: 'Bester Zug' },
-  great:   { cls: 'great',   icon: '✦',  label: 'Sehr gut' },
-  good:    { cls: 'good',    icon: '●',  label: 'Guter Zug' },
-  ok:      { cls: 'ok',      icon: '▲',  label: 'Ungenau' },
-  bad:     { cls: 'bad',     icon: '✖',  label: 'Fehler' },
-  blunder: { cls: 'blunder', icon: '??', label: 'Grober Fehler' },
-};
+// rating icons/badges removed
 
 function classifyMove(cpLoss, isBestMove) {
   if (isBestMove)   return 'best';
@@ -1099,18 +1137,34 @@ function cpStr(cp) {
   return (cp >= 0 ? '+' : '') + (cp / 100).toFixed(2);
 }
 
+function evalPctFromCp(cp) {
+  if (cp === null || cp === undefined) return 50;
+  if (Math.abs(cp) > 9000) return cp > 0 ? 100 : 0;
+  var clamped = Math.max(-500, Math.min(500, cp));
+  return 50 + (clamped / 500) * 40; // same scale as main eval bar
+}
+
+function setMiniEval(prefix, cp) {
+  var w = document.getElementById('mini-w-' + prefix);
+  var b = document.getElementById('mini-b-' + prefix);
+  if (!w || !b) return;
+  var pct = evalPctFromCp(cp);
+  w.style.flex = String(pct);
+  b.style.flex = String(100 - pct);
+}
+
 function resetRatingCard() {
   lastMoveContext = null;
   var mvPl = document.getElementById('mv-player');
   var mvBst = document.getElementById('mv-best');
   var cpPl = document.getElementById('cp-player');
   var cpBst = document.getElementById('cp-best');
-  var bdPl = document.getElementById('badge-player');
   if (mvPl) mvPl.textContent = '—';
   if (mvBst) mvBst.textContent = '—';
   if (cpPl) { cpPl.textContent = '—'; cpPl.className = 'mcp'; }
   if (cpBst) { cpBst.textContent = '—'; cpBst.className = 'mcp'; }
-  if (bdPl) { bdPl.textContent = '—'; bdPl.className = 'mbadge'; }
+  setMiniEval('player', 0);
+  setMiniEval('best', 0);
   var en = document.getElementById('eval-note');
   if (en) { en.style.display = 'none'; en.textContent = ''; }
   document.getElementById('explain-btn').style.display = 'none';
@@ -1119,26 +1173,21 @@ function resetRatingCard() {
 }
 
 function setMoveRating(ratingKey, cpPlayer, cpBestMove, playerMove, bestMove, evalNote) {
-  var r = RATINGS[ratingKey] || RATINGS.ok;
   var mvPl = document.getElementById('mv-player');
   var mvBst = document.getElementById('mv-best');
   var cpPl  = document.getElementById('cp-player');
   var cpBst = document.getElementById('cp-best');
-  var bdPl  = document.getElementById('badge-player');
   var btn   = document.getElementById('explain-btn');
   var box   = document.getElementById('explain-box');
   var noteEl = document.getElementById('eval-note');
 
   // Player box
   if (mvPl) mvPl.textContent = playerMove || '—';
-  if (bdPl) {
-    bdPl.textContent = r.icon;
-    bdPl.className = 'mbadge ' + r.cls;
-  }
   if (cpPl) {
     cpPl.textContent = cpStr(cpPlayer);
     cpPl.className = 'mcp' + (cpPlayer >= 0 ? ' pos' : ' neg');
   }
+  setMiniEval('player', cpPlayer);
 
   // Best box
   var isBest = !bestMove || bestMove === playerMove;
@@ -1147,6 +1196,7 @@ function setMoveRating(ratingKey, cpPlayer, cpBestMove, playerMove, bestMove, ev
     cpBst.textContent = cpStr(cpBestMove);
     cpBst.className = 'mcp' + (cpBestMove >= 0 ? ' pos' : ' neg');
   }
+  setMiniEval('best', cpBestMove);
 
   btn.style.display = 'block';
   btn.disabled = false;
@@ -1180,8 +1230,7 @@ function setGameStatus(msg, type) {
 }
 
 function setRatingThinking() {
-  var bdPl = document.getElementById('badge-player');
-  if (bdPl) { bdPl.textContent = '…'; bdPl.className = 'mbadge'; }
+  // no-op (badges removed)
 }
 
 // KI-Erklärung: Token sparen + robustes JSON-Parsing
