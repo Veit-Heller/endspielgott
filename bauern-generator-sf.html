@@ -84,59 +84,56 @@ h1 span{color:#6B3F1A;}
 /* ── Move rating card ── */
 .move-card{width:100%;background:#fff;border:1px solid #e8e6de;border-radius:14px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.06);}
 /* move-center removed */
-.move-card-top{display:flex;align-items:stretch;gap:10px;padding:10px 12px;}
+.move-card-top{display:flex;align-items:stretch;gap:10px;padding:10px 12px;position:relative;min-height:92px;}
 .move-box{flex:1;display:flex;align-items:center;gap:10px;padding:10px 10px;border-radius:12px;border:2px solid #e8e6de;background:linear-gradient(180deg,#fff,#faf7f1);}
 .move-box.best{background:linear-gradient(180deg,#fff,#fff7ec);border-color:#ead9bf;}
 /* rating badges removed */
-.move-box .mmeta{display:flex;flex-direction:column;gap:2px;min-width:0;}
+.move-box .mmeta{display:flex;flex-direction:column;gap:2px;min-width:0;width:100%;}
+.move-box .mline{display:flex;align-items:center;justify-content:space-between;gap:10px;}
+.move-box .mname{display:flex;flex-direction:column;gap:2px;min-width:0;}
 .move-box .mlbl{font-size:10px;font-weight:900;letter-spacing:.10em;text-transform:uppercase;color:#aaa;}
-.move-box .mline{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;}
-.move-box .mmove{font-size:16px;font-weight:900;color:#3d3d3a;line-height:1.1;}
+.move-box .mmove{font-size:16px;font-weight:900;color:#3d3d3a;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px;}
 .move-box.best .mmove{color:#6B3F1A;}
-.move-box .mscore{display:inline-flex;align-items:center;gap:8px;}
-.move-box .mcp{
-  display:inline-flex;
+.move-box .mscore{display:inline-flex;align-items:flex-end;flex-shrink:0;}
+.radial-meter{
+  width:96px;
+  height:56px; /* visible half */
+  position:relative;
+  overflow:hidden;
+  display:flex;
   align-items:center;
   justify-content:center;
-  min-width:64px;
-  font-size:13px;
+}
+.semi-svg{
+  width:96px;
+  height:56px;
+  display:block;
+}
+.semi-track{stroke:#3a2e22;stroke-width:12;fill:none;stroke-linecap:round;}
+.semi-white{stroke:#e8e6de;stroke-width:12;fill:none;stroke-linecap:round;}
+.semi-divider{stroke:#ffffff;stroke-width:12;fill:none;stroke-linecap:round;}
+.move-box .mcp{
+  position:absolute;
+  z-index:2;
+  bottom:4px;
+  left:50%;
+  transform:translateX(-50%);
+  font-size:14px;
   font-weight:950;
   letter-spacing:.02em;
-  padding:6px 10px;
-  border-radius:12px;
-  border:1px solid #e8e6de;
-  background:#f5f4ef;
-  box-shadow:0 1px 0 rgba(0,0,0,.04);
-}
-/* Greift die Eval-Balken-Optik auf:
-   - pos: „Weiß“-Block (hell)
-   - neg: „Schwarz“-Block (dunkel + Gold) */
-.move-box .mcp.pos{
   color:#3d3d3a;
-  border-color:#d8d3c7;
-  background:linear-gradient(180deg,#f2f0ea,#e8e6de);
 }
-.move-box .mcp.neg{
-  color:#F0C040;
-  border-color:#2a2118;
-  background:linear-gradient(180deg,#3f3327,#3a2e22);
-}
-.mini-eval{
-  width:10px;
-  height:34px;
-  border-radius:999px;
-  overflow:hidden;
-  border:1px solid #e8e6de;
-  background:#fff;
-  display:flex;
-  flex-direction:column;
-}
-.mini-eval .w{background:#e8e6de;flex:50;}
-.mini-eval .div{height:2px;background:#fff;flex:0 0 2px;}
-.mini-eval .b{background:#3a2e22;flex:50;}
-.undo-mini{width:46px;display:flex;align-items:center;justify-content:center;border-radius:12px;border:2px solid #e0ddd6;background:#fff;color:#888;font-weight:900;cursor:pointer;transition:transform .1s;}
-.undo-mini:active{transform:scale(.96);}
-.undo-mini:disabled{opacity:.5;cursor:not-allowed;}
+.move-box .mcp.pos{color:#3d3d3a;}
+.move-box .mcp.neg{color:#8B5E3C;}
+.move-actions{display:flex;align-items:center;gap:8px;padding:0 12px 10px;}
+.undo-row{display:inline-flex;align-items:center;justify-content:center;width:40px;height:36px;padding:0;border-radius:10px;border:2px solid #e0ddd6;background:#fff;color:#888;font-weight:900;cursor:pointer;}
+.undo-row:active{transform:scale(.98);}
+.undo-row:disabled{opacity:.5;cursor:not-allowed;}
+.move-empty{display:none;position:absolute;inset:0;align-items:center;justify-content:center;font-size:14px;font-weight:900;color:#8a7d70;letter-spacing:.01em;text-align:center;padding:0 14px;}
+.move-card.is-empty .move-box{display:none;}
+.move-card.is-empty .move-empty{display:flex;}
+.move-card.is-empty .move-actions{display:none;}
+.move-card.hidden-for-search{display:none;}
 .sit-panel{width:100%;border-radius:16px;overflow:hidden;border:1px solid #e8e6de;box-shadow:0 1px 4px rgba(0,0,0,.06);background:#fff;cursor:pointer;}
 .sit-icon{width:28px;height:28px;border-radius:10px;display:flex;align-items:center;justify-content:center;
   background:#f5f4ef;border:1px solid #e8e6de;color:#6B3F1A;font-size:16px;flex-shrink:0;}
@@ -168,7 +165,7 @@ h1 span{color:#6B3F1A;}
   border:1px solid #f0d9a0;}
 .sit-tip .spark{width:20px;height:20px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:#fff3cd;border:1px solid #f0d9a0;color:#9a6400;font-weight:900;}
 .sit-tip .txt{font-size:12px;font-weight:800;color:#6B3F1A;line-height:1.35;}
-.explain-btn{margin:0 10px 10px;width:calc(100% - 20px);padding:8px;border-radius:10px;font-family:'Nunito',sans-serif;font-weight:800;font-size:12px;border:1.5px solid #e0ddd6;background:#f9f8f4;color:#888;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:all .15s;}
+.explain-btn{margin:0;flex:1;padding:8px 12px;border-radius:10px;font-family:'Nunito',sans-serif;font-weight:800;font-size:12px;border:1.5px solid #e0ddd6;background:#f9f8f4;color:#888;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;transition:all .15s;}
 .explain-btn:hover{border-color:#8B5E3C;color:#8B5E3C;background:#fdf7ef;}
 .explain-btn:disabled{opacity:.5;cursor:not-allowed;}
 .explain-box{margin:0 10px 10px;padding:10px 12px;border-radius:10px;background:#f5f4ef;font-size:13px;font-weight:700;color:#3d3d3a;line-height:1.5;display:none;}
@@ -221,19 +218,23 @@ input[type=range]{flex:1;accent-color:#8B5E3C;}
     </div>
   </div>
 
-  <div class="move-card" id="move-card">
+  <div class="move-card is-empty" id="move-card">
     <div class="move-card-top">
       <div class="move-box" id="box-player">
         <div class="mmeta">
-          <div class="mlbl">Dein Zug</div>
           <div class="mline">
-            <div class="mmove" id="mv-player">—</div>
+            <div class="mname">
+              <div class="mlbl">Dein Zug</div>
+              <div class="mmove" id="mv-player">—</div>
+            </div>
             <div class="mscore">
-              <div class="mcp" id="cp-player">—</div>
-              <div class="mini-eval" aria-hidden="true">
-                <div class="w" id="mini-w-player" style="flex:50;"></div>
-                <div class="div"></div>
-                <div class="b" id="mini-b-player" style="flex:50;"></div>
+              <div class="radial-meter" id="rm-player" aria-hidden="true">
+                <svg class="semi-svg" viewBox="0 0 120 70" role="presentation" aria-hidden="true">
+                  <path class="semi-track" d="M 16 60 A 44 44 0 0 1 104 60"></path>
+                  <path class="semi-white" id="rmw-player" d="M 16 60 A 44 44 0 0 1 104 60"></path>
+                  <path class="semi-divider" id="rmd-player" d="M 16 60 A 44 44 0 0 1 104 60"></path>
+                </svg>
+                <div class="mcp" id="cp-player">—</div>
               </div>
             </div>
           </div>
@@ -242,27 +243,34 @@ input[type=range]{flex:1;accent-color:#8B5E3C;}
 
       <div class="move-box best" id="box-best">
         <div class="mmeta">
-          <div class="mlbl">Bester Zug</div>
           <div class="mline">
-            <div class="mmove" id="mv-best">—</div>
+            <div class="mname">
+              <div class="mlbl">Bester Zug</div>
+              <div class="mmove" id="mv-best">—</div>
+            </div>
             <div class="mscore">
-              <div class="mcp" id="cp-best">—</div>
-              <div class="mini-eval" aria-hidden="true">
-                <div class="w" id="mini-w-best" style="flex:50;"></div>
-                <div class="div"></div>
-                <div class="b" id="mini-b-best" style="flex:50;"></div>
+              <div class="radial-meter" id="rm-best" aria-hidden="true">
+                <svg class="semi-svg" viewBox="0 0 120 70" role="presentation" aria-hidden="true">
+                  <path class="semi-track" d="M 16 60 A 44 44 0 0 1 104 60"></path>
+                  <path class="semi-white" id="rmw-best" d="M 16 60 A 44 44 0 0 1 104 60"></path>
+                  <path class="semi-divider" id="rmd-best" d="M 16 60 A 44 44 0 0 1 104 60"></path>
+                </svg>
+                <div class="mcp" id="cp-best">—</div>
               </div>
             </div>
           </div>
         </div>
       </div>
+      <div class="move-empty" id="move-empty">Wähle einen weisen Zug</div>
 
-      <button class="undo-mini" id="undo-mini" onclick="undoLast()" title="Zurück">↩</button>
     </div>
     <div id="eval-note" style="display:none;font-size:11px;font-weight:600;color:#7a6f62;line-height:1.4;margin:-4px 12px 10px;max-width:520px;"></div>
-    <button class="explain-btn" id="explain-btn" onclick="loadExplanation()" style="display:none">
-      🦉 Tobold erklärt warum
-    </button>
+    <div class="move-actions">
+      <button class="undo-row" id="undo-mini" onclick="undoLast()" title="Zurück">↩</button>
+      <button class="explain-btn" id="explain-btn" onclick="loadExplanation()" style="display:none">
+        🦉 Tobold erklärt warum
+      </button>
+    </div>
     <div class="explain-box" id="explain-box"></div>
   </div>
 
@@ -755,6 +763,8 @@ function stopBoardShuffleAnim() {
 function generatePosition() {
   if (!sfReady || generating) return;
   generating = true;
+  var mc = document.getElementById('move-card');
+  if (mc) mc.classList.add('hidden-for-search');
   var btn = document.getElementById('gen-btn');
   btn.disabled = true;
   btn.textContent = '⏳ Suche Stellung…';
@@ -767,6 +777,8 @@ function generatePosition() {
 function tryNextPosition(attempt) {
   if (attempt >= MAX_POSITION_ATTEMPTS) {
     stopBoardShuffleAnim();
+    var mcFail = document.getElementById('move-card');
+    if (mcFail) mcFail.classList.remove('hidden-for-search');
     setGameStatus('Keine passende Stellung nach ' + MAX_POSITION_ATTEMPTS + ' Versuchen — Schwierigkeit lockern oder erneut klicken.', '');
     var btn = document.getElementById('gen-btn');
     btn.disabled = false;
@@ -890,6 +902,8 @@ function startGame(fen, initialCp) {
   renderBoard();
   setEval(initialCp);
   setGameStatus('', '');
+  var mc = document.getElementById('move-card');
+  if (mc) mc.classList.remove('hidden-for-search');
   resetRatingCard();
   updateSituation();
   var cpStr = (initialCp / 100).toFixed(2);
@@ -1144,17 +1158,29 @@ function evalPctFromCp(cp) {
   return 50 + (clamped / 500) * 40; // same scale as main eval bar
 }
 
-function setMiniEval(prefix, cp) {
-  var w = document.getElementById('mini-w-' + prefix);
-  var b = document.getElementById('mini-b-' + prefix);
-  if (!w || !b) return;
-  var pct = evalPctFromCp(cp);
-  w.style.flex = String(pct);
-  b.style.flex = String(100 - pct);
+function setRadialEval(prefix, cp) {
+  var arc = document.getElementById('rmw-' + prefix);
+  var div = document.getElementById('rmd-' + prefix);
+  if (!arc || !div || !arc.getTotalLength) return;
+
+  var pct = evalPctFromCp(cp); // 0..100 (white share)
+  var total = arc.getTotalLength();
+  var whiteLen = total * (pct / 100);
+
+  // white segment from left to right
+  arc.style.strokeDasharray = whiteLen + ' ' + (total - whiteLen);
+  arc.style.strokeDashoffset = '0';
+
+  // divider at the boundary
+  var divLen = Math.max(2, total * 0.015);
+  div.style.strokeDasharray = divLen + ' ' + (total - divLen);
+  div.style.strokeDashoffset = String(-whiteLen);
 }
 
 function resetRatingCard() {
   lastMoveContext = null;
+  var mc = document.getElementById('move-card');
+  if (mc) mc.classList.add('is-empty');
   var mvPl = document.getElementById('mv-player');
   var mvBst = document.getElementById('mv-best');
   var cpPl = document.getElementById('cp-player');
@@ -1163,8 +1189,8 @@ function resetRatingCard() {
   if (mvBst) mvBst.textContent = '—';
   if (cpPl) { cpPl.textContent = '—'; cpPl.className = 'mcp'; }
   if (cpBst) { cpBst.textContent = '—'; cpBst.className = 'mcp'; }
-  setMiniEval('player', 0);
-  setMiniEval('best', 0);
+  setRadialEval('player', 0);
+  setRadialEval('best', 0);
   var en = document.getElementById('eval-note');
   if (en) { en.style.display = 'none'; en.textContent = ''; }
   document.getElementById('explain-btn').style.display = 'none';
@@ -1173,6 +1199,8 @@ function resetRatingCard() {
 }
 
 function setMoveRating(ratingKey, cpPlayer, cpBestMove, playerMove, bestMove, evalNote) {
+  var mc = document.getElementById('move-card');
+  if (mc) mc.classList.remove('is-empty');
   var mvPl = document.getElementById('mv-player');
   var mvBst = document.getElementById('mv-best');
   var cpPl  = document.getElementById('cp-player');
@@ -1187,7 +1215,7 @@ function setMoveRating(ratingKey, cpPlayer, cpBestMove, playerMove, bestMove, ev
     cpPl.textContent = cpStr(cpPlayer);
     cpPl.className = 'mcp' + (cpPlayer >= 0 ? ' pos' : ' neg');
   }
-  setMiniEval('player', cpPlayer);
+  setRadialEval('player', cpPlayer);
 
   // Best box
   var isBest = !bestMove || bestMove === playerMove;
@@ -1196,7 +1224,7 @@ function setMoveRating(ratingKey, cpPlayer, cpBestMove, playerMove, bestMove, ev
     cpBst.textContent = cpStr(cpBestMove);
     cpBst.className = 'mcp' + (cpBestMove >= 0 ? ' pos' : ' neg');
   }
-  setMiniEval('best', cpBestMove);
+  setRadialEval('best', cpBestMove);
 
   btn.style.display = 'block';
   btn.disabled = false;
