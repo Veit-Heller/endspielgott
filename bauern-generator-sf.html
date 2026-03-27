@@ -134,6 +134,7 @@ h1 span{color:#6B3F1A;}
 .move-card.is-empty .move-empty{display:flex;}
 .move-card.is-empty .move-actions{display:none;}
 .move-card.hidden-for-search{display:none;}
+.sit-panel.hidden-for-search{display:none !important;}
 .sit-panel{width:100%;border-radius:16px;overflow:hidden;border:1px solid #e8e6de;box-shadow:0 1px 4px rgba(0,0,0,.06);background:#fff;cursor:pointer;}
 .sit-icon{width:28px;height:28px;border-radius:10px;display:flex;align-items:center;justify-content:center;
   background:#f5f4ef;border:1px solid #e8e6de;color:#6B3F1A;font-size:16px;flex-shrink:0;}
@@ -765,6 +766,8 @@ function generatePosition() {
   generating = true;
   var mc = document.getElementById('move-card');
   if (mc) mc.classList.add('hidden-for-search');
+  var sp = document.getElementById('situation-panel');
+  if (sp) sp.classList.add('hidden-for-search');
   var btn = document.getElementById('gen-btn');
   btn.disabled = true;
   btn.textContent = '⏳ Suche Stellung…';
@@ -779,6 +782,8 @@ function tryNextPosition(attempt) {
     stopBoardShuffleAnim();
     var mcFail = document.getElementById('move-card');
     if (mcFail) mcFail.classList.remove('hidden-for-search');
+    var spFail = document.getElementById('situation-panel');
+    if (spFail) spFail.classList.remove('hidden-for-search');
     setGameStatus('Keine passende Stellung nach ' + MAX_POSITION_ATTEMPTS + ' Versuchen — Schwierigkeit lockern oder erneut klicken.', '');
     var btn = document.getElementById('gen-btn');
     btn.disabled = false;
@@ -904,6 +909,8 @@ function startGame(fen, initialCp) {
   setGameStatus('', '');
   var mc = document.getElementById('move-card');
   if (mc) mc.classList.remove('hidden-for-search');
+  var sp = document.getElementById('situation-panel');
+  if (sp) sp.classList.remove('hidden-for-search');
   resetRatingCard();
   updateSituation();
   var cpStr = (initialCp / 100).toFixed(2);
