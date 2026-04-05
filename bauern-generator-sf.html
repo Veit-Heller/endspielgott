@@ -293,7 +293,7 @@ input[type=range]{flex:1;accent-color:#8B5E3C;}
     </div>
     <div id="eval-note" style="display:none;font-size:11px;font-weight:600;color:#7a6f62;line-height:1.4;margin:-4px 12px 10px;max-width:520px;"></div>
     <div class="move-actions">
-      <button class="undo-row" id="undo-mini" onclick="undoLast()" title="Zurück">↩</button>
+      <button class="undo-row" id="undo-mini" onclick="undoLast()" title="Letzten Zug zurück — du bist wieder Weiß am Zug">↩</button>
       <button class="explain-btn" id="explain-btn" onclick="loadExplanation()" style="display:none">
         🦉 Tobold erklärt warum
       </button>
@@ -1985,8 +1985,18 @@ function undoLast() {
   if (generating) return;
   if (!hist || hist.length <= 1) { setGameStatus('Das ist bereits die Ausgangsstellung.', ''); return; }
   bumpPlayGen();
-  // Ein Klick = ein Halbzug zurück (zuerst letzter Schwarz-Zug, dann dein Weiß-Zug usw.).
+  // Du spielst nur Weiß: ein Klick soll wieder Figuren wählen erlauben → bis Weiß am Zug zurück
+  // (nach deinem Zug ist Schwarz dran; ohne zweiten Pop wäre das Brett „gesperrt“).
   hist.pop();
+  while (hist.length > 1) {
+    var top = hist[hist.length - 1];
+    try {
+      if (new Chess(top.fen).turn() === 'w') break;
+    } catch (e) {
+      break;
+    }
+    hist.pop();
+  }
   var tip = hist[hist.length - 1];
   game = new Chess(tip.fen);
   sel = null; lastMv = null; busy = false;
