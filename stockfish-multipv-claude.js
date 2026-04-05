@@ -93,9 +93,11 @@
 
   /**
    * Abschnitt für den Tobold-/Claude-Prompt (Weiß-Sicht, wie Rest der App).
+   * @param {number} [maxPlies] UCI-Halbzüge in der PV-Zeile (kleiner = kürzerer API-Prompt)
    */
-  function formatMultiPVForExplain(fen, variations) {
+  function formatMultiPVForExplain(fen, variations, maxPlies) {
     if (!variations || typeof variations !== 'object') return '';
+    var mp = maxPlies == null || maxPlies < 1 ? 6 : Math.min(12, maxPlies | 0);
     var keys = Object.keys(variations).sort(function (a, b) {
       return parseInt(a, 10) - parseInt(b, 10);
     });
@@ -107,14 +109,20 @@
       var k = keys[i];
       var v = variations[k];
       if (!v) continue;
+      var pvShow = v.pvUci || v.firstUci;
+      if (v.movesArr && v.movesArr.length) {
+        pvShow = v.movesArr.slice(0, mp).join(' ');
+      }
       lines.push(
         k +
           '. Erster Zug: ' +
           v.firstUci +
           ' — Eval: ' +
           v.evalLabel +
-          ' — PV (UCI, bis 6 Halbzüge): ' +
-          (v.pvUci || v.firstUci)
+          ' — PV (UCI, bis ' +
+          mp +
+          ' HZ): ' +
+          pvShow
       );
     }
     lines.push(

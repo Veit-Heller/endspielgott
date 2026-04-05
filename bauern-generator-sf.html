@@ -1670,7 +1670,7 @@ function setRatingThinking() {
 }
 
 // KI-Erklärung: Token sparen + robustes JSON-Parsing
-var EXPLAIN_LEGAL_MOVES_MAX = 18;
+var EXPLAIN_LEGAL_MOVES_MAX = 10;
 
 function truncateMoveListSAN(moves, maxN) {
   if (!moves || !moves.length) return '(keine)';
@@ -1753,7 +1753,7 @@ function loadExplanation() {
 
   var multiPVBlock = '';
   if (typeof EndspielgottMultiPV !== 'undefined' && ctx.stockfishVariations) {
-    var blk = EndspielgottMultiPV.formatMultiPVForExplain(ctx.fen, ctx.stockfishVariations);
+    var blk = EndspielgottMultiPV.formatMultiPVForExplain(ctx.fen, ctx.stockfishVariations, 4);
     if (blk) multiPVBlock = '=== STOCKFISCH MULTIPV (Wurzelstellung) ===\n' + blk;
   }
 

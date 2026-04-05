@@ -26,3 +26,5 @@ Dann im Browser `http://localhost:3000` oeffnen.
 4. Deploy ausloesen.
 
 Danach laufen die Erklaerungen ueber `api/explain.js` serverseitig, statt den Key direkt im Browser-Request zu senden.
+
+**Timeout:** Die Erklär-Route nutzt `maxDuration: 60` in `vercel.json`. Auf dem **Hobby**-Plan ist die harte Obergrenze für Serverless-Funktionen oft **10 Sekunden** — dann kann `FUNCTION_INVOCATION_TIMEOUT` trotzdem auftreten. In dem Fall **Vercel Pro** nutzen oder lokal mit `npx serve .` testen (ohne Vercel-Zeitlimit).
