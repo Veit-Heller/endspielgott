@@ -424,6 +424,13 @@
         '⚠️ Stalemate durch 50-Züge-Regel wenn kein Fortschritt',
       ],
       tip: '💡 Klassisch: zuerst den eigenen König in die „richtige Zone“ bringen, dann mit dem Turm Matt erzwingen — wie die Grundzüge aus dem Lehrbuch.',
+      extraTips: [
+        'Schritt für Schritt die „Box“ verkleinern — der schwarze König soll weniger Felder behalten.',
+        'Turm nicht zu weit weg: er soll Linien schneiden, nicht nur von der Ferne zuschauen.',
+        'Mattbild üben: immer eine Flucht für Schwarz lassen, bis das echte Matt kommt.',
+        'Eigenen König näher an den schwarzen König führen, dann greift der Turm effektiver.',
+        'Turm von der Seite oder mit Abstand stellen — zu eng = Pattgefahr.',
+      ],
     },
     {
       id: 'kr_vs_kr',
@@ -454,7 +461,7 @@
     },
     {
       id: 'krp_vs_krp',
-      priority: 92,
+      priority: 96,
       match: function (p) {
         return (
           p.wK === 1 &&
@@ -485,7 +492,20 @@
         '⚠️ König zu weit weg vom Bauernlauf — der Turm allein stoppt selten alles',
         '⚠️ Falschen Flügel wählen — manchmal gewinnt nur der zweite Freibauer',
       ],
-      tip: '💡 Turmendspiele mit Bauern sind Partie-Endspiele: meist zählt ein einziger Freibauer mehr als „allgemeine“ Turmaktivität.',
+      tip: '💡 Turm + Bauern: der Freibauer ist meist der Star — der Turm liefert Schachs, sperrt Linien oder steht hinter dem Bauern.',
+      /** Zufälliger Zusatz in der UI (siehe updateSituation im HTML) */
+      extraTips: [
+        'Turm auf die 7./6. Reihe: oft maximal unbequem für den gegnerischen König.',
+        'Wettlauf auf zwei Flügeln: manchmal ist der zweite Freibauer wichtiger als der erste.',
+        'Gegnerischen Turm „frisieren“: weg vom kritischen Bauernpfad, bevor du den König schickst.',
+        'Philidor-Idee: Turm vom Seitenfel aus den gegnerischen König vom Bauern fernhalten.',
+        'Lucena-Idee: eigener König als Blockade vor dem gegnerischen König, Turm baut die „Brücke“.',
+        'Zugzwang mit Turm: ein Tempo reicht, um den Freibauer einen Schritt weiterzuschieben.',
+        'Gleiche Bauernzahl: kleine strukturelle Pluspunkte (aktiver König, besserer Turm) entscheiden.',
+        'Randbauer mit Turm: oft andere Technik als Mittelbauer — trotzdem erst Aktivität schaffen.',
+        'Tausch nur mit Plan: Turm gegen Turm kann aus Gewinn sofort Remis bedeuten.',
+        'König in die „Quadrate“ des Bauernlaufs einbeziehen — ohne König läuft selten etwas.',
+      ],
     },
     {
       id: 'rook_endgame_general',
