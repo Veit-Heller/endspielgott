@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Bauernendspiel-Generator</title>
+<title>Bauern- &amp; Turmendspiel-Generator</title>
 <script src="chess.js"></script>
 <script src="endgame-catalog.js"></script>
 <script src="stockfish-multipv-claude.js"></script>
@@ -346,13 +346,20 @@ input[type=range]{flex:1;accent-color:#8B5E3C;}
 
   <div class="setup" style="padding:12px 18px;">
     <div class="setup-row">
+      <span class="setup-lbl">Endspiel:</span>
+      <div class="pawn-btns mode-btns">
+        <button type="button" class="pb mode-btn active" data-mode="pawns" onclick="setGameMode('pawns')">Bauern</button>
+        <button type="button" class="pb mode-btn" data-mode="rook" onclick="setGameMode('rook')">Turm</button>
+      </div>
+    </div>
+    <div class="setup-row" id="pawn-count-row">
       <span class="setup-lbl">Bauern pro Seite:</span>
       <div class="pawn-btns">
-        <button class="pb" onclick="setPawns(1)">1</button>
-        <button class="pb active" onclick="setPawns(2)">2</button>
-        <button class="pb" onclick="setPawns(3)">3</button>
-        <button class="pb" onclick="setPawns(4)">4</button>
-        <button class="pb" onclick="setPawns(5)">5</button>
+        <button type="button" class="pb" onclick="setPawns(1)">1</button>
+        <button type="button" class="pb active" onclick="setPawns(2)">2</button>
+        <button type="button" class="pb" onclick="setPawns(3)">3</button>
+        <button type="button" class="pb" onclick="setPawns(4)">4</button>
+        <button type="button" class="pb" onclick="setPawns(5)">5</button>
       </div>
     </div>
   </div>
@@ -443,19 +450,36 @@ function drawQueen(w, flip) {
     '<circle cx="30.5" cy="5" r="1.2" fill="#EED9A0" stroke="' + c.goldD + '" stroke-width="0.6"/>'
   , flip);
 }
+function drawRook(w, flip) {
+  var c = PC(w);
+  return svgWrap(
+    '<path d="M10 43 Q9 39 13 38 L35 38 Q39 39 38 43Z" fill="' + c.body + '" stroke="' + c.ol + '" stroke-width="1.5" stroke-linejoin="round"/>' +
+    '<rect x="11" y="18" width="26" height="20" rx="2" fill="' + c.body + '" stroke="' + c.ol + '" stroke-width="1.5"/>' +
+    '<rect x="9" y="34" width="30" height="6" rx="2" fill="' + c.mid + '" stroke="' + c.ol + '" stroke-width="1.5"/>' +
+    '<rect x="11" y="14" width="26" height="6" rx="2" fill="' + c.mid + '" stroke="' + c.ol + '" stroke-width="1.5"/>' +
+    '<rect x="9"  y="8" width="7" height="10" rx="2" fill="' + c.body + '" stroke="' + c.ol + '" stroke-width="1.5"/>' +
+    '<rect x="20" y="8" width="8" height="10" rx="2" fill="' + c.body + '" stroke="' + c.ol + '" stroke-width="1.5"/>' +
+    '<rect x="32" y="8" width="7" height="10" rx="2" fill="' + c.body + '" stroke="' + c.ol + '" stroke-width="1.5"/>' +
+    '<rect x="17" y="24" width="14" height="8" rx="2" fill="' + c.mid + '" stroke="' + c.ol + '" stroke-width="1" opacity="0.7"/>'
+  , flip);
+}
 var PSVG = {
   wP: function() { return drawPawn(true); },
   bP: function() { return drawPawn(false, true); },
   wK: function() { return drawKing(true); },
   bK: function() { return drawKing(false, true); },
   wQ: function() { return drawQueen(true); },
-  bQ: function() { return drawQueen(false, true); }
+  bQ: function() { return drawQueen(false, true); },
+  wR: function() { return drawRook(true); },
+  bR: function() { return drawRook(false, true); }
 };
 
 // ── STOCKFISH ─────────────────────────────────────────
 var sf = null, sfReady = false;
 var pendingResolve = null, pendingLines = [];
 var skillLevel = 4, numPawns = 2;
+/** 'pawns' | 'rook' */
+var gameMode = 'pawns';
 var sfQueue = Promise.resolve(); // serialize Stockfish requests (Worker is single-flight)
 
 function initStockfish() {
@@ -720,8 +744,15 @@ function fenToFieldTable(fen) {
 // difficulty: 1=Leicht(+80..+200), 2=Mittel(+30..+150), 3=Schwer(+10..+80)
 var difficulty = 2;
 var DIFF_RANGES = { 1:[80,200], 2:[30,150], 3:[10,80] };
+/** Turmendspiele: oft knappere Bewertungen, etwas weichere CP-Bänder */
+var DIFF_RANGES_ROOK = { 1:[45,220], 2:[12,165], 3:[2,88] };
 var DIFF_LABELS = { 1:'Leicht', 2:'Mittel', 3:'Schwer' };
 var DIFF_DESC   = { 1:'Klarer Vorteil — lerne die Technik', 2:'Realistisches Spiel — muss gearbeitet werden', 3:'Knapper Vorteil — kein Fehler erlaubt' };
+
+function getActiveDiffRange() {
+  var tab = gameMode === 'rook' ? DIFF_RANGES_ROOK : DIFF_RANGES;
+  return tab[difficulty] || tab[2];
+}
 
 function updDiff(v) {
   difficulty = parseInt(v);
@@ -732,7 +763,21 @@ function updDiff(v) {
 function updSkill(v) { skillLevel = parseInt(v); document.getElementById('skval').textContent = 'Skill ' + v; }
 function setPawns(n) {
   numPawns = n;
-  document.querySelectorAll('.pb').forEach(function(b, i) { b.classList.toggle('active', i === n - 1); });
+  document.querySelectorAll('#pawn-count-row .pb').forEach(function(b, i) { b.classList.toggle('active', i === n - 1); });
+}
+
+function setGameMode(m) {
+  gameMode = m === 'rook' ? 'rook' : 'pawns';
+  document.querySelectorAll('.mode-btn').forEach(function(b) {
+    b.classList.toggle('active', b.getAttribute('data-mode') === gameMode);
+  });
+  var row = document.getElementById('pawn-count-row');
+  if (row) row.style.display = gameMode === 'rook' ? 'none' : '';
+}
+
+function buildFenForMode() {
+  if (gameMode === 'rook') return buildFenRook();
+  return buildFen(numPawns);
 }
 // API-Key wird NUR serverseitig genutzt (Vercel Env: ANTHROPIC_API_KEY)
 
@@ -750,7 +795,7 @@ function randomShuffleStartChess() {
   var tries = 0;
   while (tries < 45) {
     tries++;
-    var fen = buildFen(numPawns);
+    var fen = buildFenForMode();
     if (!fen) continue;
     var g = new Chess(fen);
     if (!g || g.moves().length === 0 || g.in_check()) continue;
@@ -824,8 +869,9 @@ function generatePosition() {
   var btn = document.getElementById('gen-btn');
   btn.disabled = true;
   btn.textContent = '⏳ Suche Stellung…';
-  var range = DIFF_RANGES[difficulty] || DIFF_RANGES[2];
-  setGameStatus('Suche ' + DIFF_LABELS[difficulty] + '-Stellung (' + (range[0]/100).toFixed(2) + ' bis +' + (range[1]/100).toFixed(2) + ')…', '');
+  var range = getActiveDiffRange();
+  var modeLbl = gameMode === 'rook' ? 'Turm' : 'Bauern';
+  setGameStatus('Suche ' + modeLbl + ' — ' + DIFF_LABELS[difficulty] + ' (' + (range[0]/100).toFixed(2) + ' bis +' + (range[1]/100).toFixed(2) + ')…', '');
   startBoardShuffleAnim();
   tryNextPosition(0);
 }
@@ -847,7 +893,7 @@ function tryNextPosition(attempt) {
     if (game) renderBoard();
     return;
   }
-  var fen = buildFen(numPawns);
+  var fen = buildFenForMode();
   if (!fen) { tryNextPosition(attempt + 1); return; }
   var testGame = new Chess(fen);
   if (!testGame || testGame.moves().length === 0 || testGame.in_check()) {
@@ -860,7 +906,7 @@ function tryNextPosition(attempt) {
     return;
   }
   evalPosition(fen, GENERATOR_STOCKFISH_DEPTH).then(function(cp) {
-    var range = DIFF_RANGES[difficulty] || DIFF_RANGES[2];
+    var range = getActiveDiffRange();
     if (cp === null || cp < range[0] || cp > range[1]) {
       tryNextPosition(attempt + 1);
       return;
@@ -930,6 +976,60 @@ function buildFen(n) {
   return rows.join('/') + ' w - - 0 1';
 }
 
+/** König + Turm vs König + Turm, keine Bauern; zufällig bis FEN legal und Züge existieren */
+function buildFenRook() {
+  for (var attempt = 0; attempt < 220; attempt++) {
+    var board = [];
+    for (var z = 0; z < 8; z++) board.push([null, null, null, null, null, null, null, null]);
+    var wKr, wKc, bKr, bKc, ok = false;
+    for (var t = 0; t < 80 && !ok; t++) {
+      wKr = 4 + Math.floor(Math.random() * 3);
+      wKc = Math.floor(Math.random() * 8);
+      bKr = 1 + Math.floor(Math.random() * 3);
+      bKc = Math.floor(Math.random() * 8);
+      if (Math.abs(wKr - bKr) >= 2 && Math.abs(wKc - bKc) >= 2) ok = true;
+    }
+    if (!ok) continue;
+    board[wKr][wKc] = 'K';
+    board[bKr][bKc] = 'k';
+    var empty = [];
+    for (var r = 0; r < 8; r++) {
+      for (var c = 0; c < 8; c++) {
+        if (!board[r][c]) empty.push([r, c]);
+      }
+    }
+    if (empty.length < 2) continue;
+    var i1 = Math.floor(Math.random() * empty.length);
+    var i2 = Math.floor(Math.random() * (empty.length - 1));
+    if (i2 >= i1) i2++;
+    var p1 = empty[i1];
+    var p2 = empty[i2];
+    board[p1[0]][p1[1]] = 'R';
+    board[p2[0]][p2[1]] = 'r';
+    var rows = [];
+    for (var r = 0; r < 8; r++) {
+      var s = '', e = 0;
+      for (var c = 0; c < 8; c++) {
+        if (board[r][c]) {
+          if (e) {
+            s += e;
+            e = 0;
+          }
+          s += board[r][c];
+        } else e++;
+      }
+      if (e) s += e;
+      rows.push(s);
+    }
+    var fen = rows.join('/') + ' w - - 0 1';
+    try {
+      var g = new Chess(fen);
+      if (g && g.moves().length > 0 && kingsWellSeparated(g)) return fen;
+    } catch (e) {}
+  }
+  return null;
+}
+
 function shuffled8() {
   var a = [0,1,2,3,4,5,6,7];
   for (var i = 7; i > 0; i--) {
@@ -971,14 +1071,21 @@ function startGame(fen, initialCp) {
   resetRatingCard();
   updatePlayPbarZug();
   updateSituation();
-  var cpStr = (initialCp / 100).toFixed(2);
-  var tips = [
+  var tipsPawn = [
     'Aktiviere deinen König — er ist im Endspiel deine stärkste Figur!',
     'Suche nach Freibauern: kein schwarzer Bauer auf derselben Linie.',
     'Opposition: König direkt gegenüber (1 Feld Abstand) erzwingt den Durchmarsch.',
-    'Randbauernn (a/h) sind schwer zu verwerten — bevorzuge zentrale Bauern.',
+    'Randbauern (a/h) sind schwer zu verwerten — bevorzuge zentrale Bauern.',
     'Verbundene Freibauern sind extrem stark — führe sie gemeinsam vor.'
   ];
+  var tipsRook = [
+    'Turm auf offene Linien — Aktivität schlägt oft passives Herumstehen.',
+    'König und Turm gemeinsam: erst König näher an den gegnerischen König, dann einschnüren.',
+    'Turm „schneidet“ den gegnerischen König, wenn er Reihen oder Linien kontrolliert.',
+    'Gegnerischen Turm nicht leicht tauschen — oft entscheidet die bessere Königstellung.',
+    '7.-Reihe-Idee: Turm tief kann den gegnerischen König wie festnageln.'
+  ];
+  var tips = gameMode === 'rook' ? tipsRook : tipsPawn;
   var tip = tips[Math.floor(Math.random() * tips.length)];
   setGameStatus('', '');
   setTurnDot(true);

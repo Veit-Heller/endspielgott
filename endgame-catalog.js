@@ -20,6 +20,20 @@
     );
   }
 
+  /** Keine Bauern, keine Dame/Läufer/Springer — Turmendspiele */
+  function noPawnNoQueenBishopKnight(p) {
+    return (
+      p.wP === 0 &&
+      p.bP === 0 &&
+      p.wQ === 0 &&
+      p.bQ === 0 &&
+      p.wB === 0 &&
+      p.bB === 0 &&
+      p.wN === 0 &&
+      p.bN === 0
+    );
+  }
+
   /**
    * Grobe Linien-Spiegelung: sortierte weiße Linien + absteigend sortierte schwarze Linien
    * ergeben paarweise Summe 7 (a↔h). Gleiche Mittellinie (z. B. e+e) zählt nicht als Spiegel.
@@ -385,6 +399,86 @@
       tip: '💡 Wenn die Bauern auf gespiegelten Linien stehen, ähnelt die Planspiele oft einem symmetrischen Kampf — Tempo und König aktiv entscheiden.',
     },
     {
+      id: 'kr_vs_k',
+      priority: 98,
+      match: function (p) {
+        return (
+          p.wK === 1 &&
+          p.bK === 1 &&
+          p.wR === 1 &&
+          p.bR === 0 &&
+          noPawnNoQueenBishopKnight(p)
+        );
+      },
+      title: 'König + Turm vs König',
+      goals: [
+        'Schwarzen König mit Turm und König zum Rand oder in die Ecke drängen („Lucena-ähnliche“ Idee: König voran).',
+        'Turm so stellen, dass er Linien schneidet und den schwarzen König begrenzt — nicht zu weit vom Gegner weg.',
+        'Wenn der schwarze König nah ist: Turm auf Sperr- oder Schachdistanz, eigenen König näher an den gegnerischen König führen.',
+        'Mattbild am Rand üben: Turm und König kooperieren, ohne Patt zu erzeugen.',
+      ],
+      goalOne: 'König aktivieren, dann mit Turm den schwarzen König einschnüren.',
+      warnings: [
+        '⚠️ PATT: Turm stellt zu eng, schwarzer König ohne Zug = Remis',
+        '⚠️ Turm zu weit weg — der schwarze König entwischt zur Mitte',
+        '⚠️ Stalemate durch 50-Züge-Regel wenn kein Fortschritt',
+      ],
+      tip: '💡 Klassisch: zuerst den eigenen König in die „richtige Zone“ bringen, dann mit dem Turm Matt erzwingen — wie die Grundzüge aus dem Lehrbuch.',
+    },
+    {
+      id: 'kr_vs_kr',
+      priority: 94,
+      match: function (p) {
+        return (
+          p.wK === 1 &&
+          p.bK === 1 &&
+          p.wR === 1 &&
+          p.bR === 1 &&
+          noPawnNoQueenBishopKnight(p)
+        );
+      },
+      title: 'Turm vs Turm — Königsspiel',
+      goals: [
+        'Eigenen König aktivieren und zentralisieren — oft entscheidet der König den Kampf.',
+        'Turm auf offene Linien oder hinter gegnerischen Figuren (7. Reihe-Idee): Aktivität vor Material.',
+        'Gegnerischen Turm binden oder zu passiven Zügen zwingen; doppelte Angriffe mit König + Turm suchen.',
+        'Remis mit Turm weniger beachten als mit Läufer/Springer — oft gewinnt bessere Königstellung oder Aktivität.',
+      ],
+      goalOne: 'König und Turm koordinieren: Aktivität und Linien beherrschen.',
+      warnings: [
+        '⚠️ Turm tauschen ohne Plan — aus Gewinn wird schnell remis',
+        '⚠️ Passiver Turm am Rand während der gegnerische Turm eindringt',
+        '⚠️ König zu weit weg vom Geschehen — der Turm allein reicht selten',
+      ],
+      tip: '💡 Turmendspiele leben von Schnittfeldern und Königsangriff: wer zuerst den gegnerischen König bedrängt, hat oft die praktische Initiative.',
+    },
+    {
+      id: 'rook_endgame_general',
+      priority: 9,
+      match: function (p) {
+        return (
+          noPawnNoQueenBishopKnight(p) &&
+          p.wK === 1 &&
+          p.bK === 1 &&
+          (p.wR > 0 || p.bR > 0)
+        );
+      },
+      title: 'Turmendspiel — Grundprinzipien',
+      goals: [
+        'Turm auf aktive Felder: offene Linien, 7./8. Reihe, Schneiden des gegnerischen Königs.',
+        'König mit einbeziehen — im Endspiel ist er stark für Zugzwang und Mattnetze.',
+        'Turm nicht unnötig weit von der Aktion entfernen; Tausch nur mit klarem Plan.',
+        'Auf ewige Schachs und Remis-Ideen achten, wenn du Vorteil hast.',
+      ],
+      goalOne: 'Turm aktiv, König mitspielen lassen.',
+      warnings: [
+        '⚠️ Passiver Turm verliert oft gegen aktiven Turm + König',
+        '⚠️ Patt und Dauerschach als Rettung des Schwächeren',
+        '⚠️ Zu vorsichtig = Vorteil verschenken',
+      ],
+      tip: '💡 Turm braucht offene Linien — oft ist ein Zug mit dem König stärker als ein passiver Turmrückzug.',
+    },
+    {
       id: 'qq_vs_k',
       priority: 96,
       match: function (p) {
@@ -609,7 +703,8 @@
     {
       id: 'general',
       priority: 1,
-      match: function () {
+      match: function (p) {
+        if (noPawnNoQueenBishopKnight(p) && (p.wR > 0 || p.bR > 0)) return false;
         return true;
       },
       title: 'Bauernendspiel — Grundprinzipien',
