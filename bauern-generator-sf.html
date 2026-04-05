@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Bauernendspiel-Generator</title>
 <script src="chess.js"></script>
+<script src="endgame-catalog.js"></script>
+<script src="stockfish-multipv-claude.js"></script>
 <script defer src="/_vercel/insights/script.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&display=swap');
@@ -152,8 +154,8 @@ h1 span{color:#6B3F1A;}
 .sit-list{display:flex;flex-direction:column;gap:6px;}
 .sit-item{display:flex;gap:10px;align-items:flex-start;padding:8px 10px;border-radius:12px;background:#fbfaf7;border:1px solid #f0ede5;}
 .sit-item:last-child{margin-bottom:0;}
-.sit-bullet{width:18px;height:18px;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;
-  background:#f1e7d9;border:1px solid #ead9bf;color:#6B3F1A;font-size:12px;font-weight:900;line-height:1;}
+.sit-bullet{min-width:20px;height:20px;border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  background:#f1e7d9;border:1px solid #ead9bf;color:#6B3F1A;font-size:11px;font-weight:900;line-height:1;}
 .sit-text{font-size:12px;font-weight:800;color:#3d3d3a;line-height:1.35;}
 .sit-warn-wrap{border-radius:14px;overflow:hidden;border:1px solid #f2c7c7;background:linear-gradient(180deg,#fff, #fff7f7);}
 .sit-warn-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;cursor:pointer;user-select:none;}
@@ -472,7 +474,9 @@ function initStockfish() {
 
 // Returns Promise<{bestmove, lines}>
 // cp in lines is ALWAYS from side-to-move perspective
-function sfSearch(fen, depth, skill) {
+// multipv: 1 = Standard; 2+ = mehrere PV-Zeilen in lines bis bestmove
+function sfSearch(fen, depth, skill, multipv) {
+  var mp = multipv == null || multipv < 1 ? 1 : Math.min(5, multipv | 0);
   sfQueue = sfQueue.then(function() {
     return new Promise(function(resolve) {
       if (!sfReady || !sf) { resolve(null); return; }
@@ -480,6 +484,7 @@ function sfSearch(fen, depth, skill) {
       pendingLines = [];
       sf.postMessage('ucinewgame');
       if (skill !== null) sf.postMessage('setoption name Skill Level value ' + skill);
+      sf.postMessage('setoption name MultiPV value ' + mp);
       sf.postMessage('position fen ' + fen);
       sf.postMessage('go depth ' + depth);
     });
@@ -494,11 +499,15 @@ function parseCPsideToMove(lines) {
   // We encode "mate in X" into a synthetic CP value so we don't lose X.
   // Sign: + = side-to-move gets mate, - = side-to-move gets mated.
   // Magnitude: 9000 + X
+  // Bei MultiPV > 1 nur Zeilen mit multipv 1 (oder ohne multipv = 1) verwenden.
   var MATE_BASE = 9000;
   for (var i = lines.length - 1; i >= 0; i--) {
-    var m = lines[i].match(/score cp (-?\d+)/);
+    var line = lines[i];
+    var mpm = line.match(/\bmultipv (\d+)\b/);
+    if (mpm && mpm[1] !== '1') continue;
+    var m = line.match(/score cp (-?\d+)/);
     if (m) return parseInt(m[1]);
-    var mm = lines[i].match(/score mate (-?\d+)/);
+    var mm = line.match(/score mate (-?\d+)/);
     if (mm) {
       var mateRaw = parseInt(mm[1]); // e.g. 3 or -3
       var x = Math.abs(mateRaw);
@@ -511,7 +520,10 @@ function parseCPsideToMove(lines) {
 
 function parsePV(lines) {
   for (var i = lines.length - 1; i >= 0; i--) {
-    var m = lines[i].match(/ pv ([\w ]+)/);
+    var line = lines[i];
+    var mpm = line.match(/\bmultipv (\d+)\b/);
+    if (mpm && mpm[1] !== '1') continue;
+    var m = line.match(/ pv ([\w ]+)/);
     if (m) return m[1].trim().split(' ').slice(0, 5);
   }
   return [];
@@ -522,17 +534,32 @@ function toWhiteCP(cp, fen) {
   return fen.split(' ')[1] === 'b' ? -cp : cp;
 }
 
-// Full eval: returns {cp (white-perspective), bestmove, bestSAN, pvSAN}
+var EVAL_FULL_MULTIPV = 3;
+
+// Full eval: returns {cp (white-perspective), bestmove, bestSAN, pvSAN, variations}
 function evalFull(fen, depth) {
-  return sfSearch(fen, depth, null).then(function(res) {
+  return sfSearch(fen, depth, null, EVAL_FULL_MULTIPV).then(function(res) {
     if (!res) return null;
     var cpRaw = parseCPsideToMove(res.lines);
     if (cpRaw === null) return null;
     var cp = toWhiteCP(cpRaw, fen);
     var bestSAN = res.bestmove ? uciToSAN(fen, res.bestmove) : null;
-    var pvUCI = parsePV(res.lines);
+    var variations =
+      typeof EndspielgottMultiPV !== 'undefined' && EndspielgottMultiPV.parseStockfishMultiPV
+        ? EndspielgottMultiPV.parseStockfishMultiPV(res.lines, fen)
+        : {};
+    var pvUCI =
+      variations['1'] && variations['1'].movesArr && variations['1'].movesArr.length
+        ? variations['1'].movesArr
+        : parsePV(res.lines);
     var pvSAN = pvUCItoSAN(fen, pvUCI);
-    return { cp: cp, bestmove: res.bestmove, bestSAN: bestSAN, pvSAN: pvSAN };
+    return {
+      cp: cp,
+      bestmove: res.bestmove,
+      bestSAN: bestSAN,
+      pvSAN: pvSAN,
+      variations: variations,
+    };
   });
 }
 
@@ -1076,7 +1103,7 @@ function afterMove(fenBefore, move) {
           fenBefore, fenAfterPlayer, move.san, move.from + move.to + (move.promotion || ''), bestSAN, null,
           cpBeforeEval, cpAfterActual, cpBestAfterEval,
           cpAfterActual - cpBestAfterEval, cpLoss,
-          isBestMove, pvSAN
+          isBestMove, pvSAN, sfBest ? sfBest.variations : null
         );
         scheduleTobold();
       } else {
@@ -1111,7 +1138,7 @@ function afterMove(fenBefore, move) {
             fenBefore, fenAfterPlayer, move.san, move.from + move.to + (move.promotion || ''), bestSAN, bestUci,
             cpBeforeEval, cpAfterActual, cpBestAfterEval,
             cpAfterActual - cpBestAfterEval, cpLoss,
-            isBestMove, pvSAN
+            isBestMove, pvSAN, sfBest ? sfBest.variations : null
           );
           scheduleTobold();
         } else {
@@ -1122,7 +1149,7 @@ function afterMove(fenBefore, move) {
               fenBefore, fenAfterPlayer, move.san, move.from + move.to + (move.promotion || ''), bestSAN, bestUci,
               cpBeforeEval, cpAfterActual, cpBestAfterEval,
               cpAfterActual - cpBestAfterEval, cpLoss,
-              isBestMove, pvSAN
+              isBestMove, pvSAN, sfBest ? sfBest.variations : null
             );
             scheduleTobold();
           });
@@ -1370,7 +1397,13 @@ function loadExplanation() {
     'Legale Züge ' + sideAfter + ' (Stichprobe): ' + legalAfterStr + '\n\n' +
     '=== ENGINE-EINORDNUNG (Weiß-Sicht) ===\n' +
     'Vor deinem Zug (Stellungswert): ' + cpStr(ctx.cpBefore) + '\n' +
-    betterBlock + '\n\n' +
+    betterBlock + '\n' +
+    (function() {
+      if (typeof EndspielgottMultiPV === 'undefined' || !ctx.stockfishVariations) return '';
+      var blk = EndspielgottMultiPV.formatMultiPVForExplain(ctx.fen, ctx.stockfishVariations);
+      return blk ? '\n\n=== STOCKFISCH MULTIPV (Wurzelstellung, Objektiv) ===\n' + blk + '\n' : '';
+    })() +
+    '\n' +
     'TEXTAUFGABE: ' + task + '\n' +
     'Stil: Deutsch, \"du\", sachlich, keine Floskeln.\n\n' +
     'FORMAT (strikt): nur EIN JSON-Objekt, kein Markdown.\n' +
@@ -1414,7 +1447,22 @@ function loadExplanation() {
     });
 }
 
-function askClaudeForFeedback(fen, fenAfter, playerMove, playerUci, bestMove, bestUci, cpBeforeEval, cpAfterActual, cpBestAfterEval, deltaVsBest, cpLoss, isBestMove, pvSAN) {
+function askClaudeForFeedback(
+  fen,
+  fenAfter,
+  playerMove,
+  playerUci,
+  bestMove,
+  bestUci,
+  cpBeforeEval,
+  cpAfterActual,
+  cpBestAfterEval,
+  deltaVsBest,
+  cpLoss,
+  isBestMove,
+  pvSAN,
+  stockfishVariations
+) {
   // Compute legal moves for context
   var legalBefore = [], legalAfter = [];
   try { legalBefore = new Chess(fen).moves(); } catch(e) {}
@@ -1428,7 +1476,8 @@ function askClaudeForFeedback(fen, fenAfter, playerMove, playerUci, bestMove, be
     cpBefore: cpBeforeEval, cpAfter: cpAfterActual, cpBestAfter: cpBestAfterEval,
     cpDeltaVsBest: deltaVsBest, cpLoss: cpLoss,
     isBestMove: isBestMove, pvSAN: pvSAN,
-    legalBefore: legalBefore, legalAfter: legalAfter
+    legalBefore: legalBefore, legalAfter: legalAfter,
+    stockfishVariations: stockfishVariations || null,
   };
 
   var ratingKey = classifyMove(cpLoss, isBestMove);
@@ -1563,138 +1612,13 @@ function undoLast() {
 }
 
 
-// ── ENDGAME CATALOG ───────────────────────────────────────────────
-var ENDGAME_CATALOG = [
-  {
-    id:'kp_vs_k_rook',priority:100,
-    match:function(p){return p.wP===1&&p.bP===0&&noOther(p)&&(p.wPfiles[0]===0||p.wPfiles[0]===7);},
-    title:'König + Randbauer vs König',
-    goals:['König auf Schlüsselfelder b7/a7 bringen (bei a-Bauer)','Schwarzen König aus der Ecke a8/b8 heraushalten','Vorsicht: Patt! Nie Bauer vorrücken wenn schwarzer König auf a8 und kein Ausweg'],
-    goalOne:'König auf das Schlüsselfeld vor den Randbauern bringen (b7/a7).',
-    warnings:['⚠️ Randbauer (a/h) gewinnt NUR wenn König b7/a7 besetzt','⚠️ b7+ wenn schwarzer König auf a8 = sofortiges PATT → Remis!','⚠️ Schwarzer König auf a8 + Weißer König auf a6 = immer Remis'],
-    tip:'💡 Randbauern führen oft zu Patt. Der schwarze König versteckt sich in der Ecke — du kannst ihn nicht herausschlagen.'
-  },
-  {
-    id:'kp_vs_k',priority:90,
-    match:function(p){return p.wP===1&&p.bP===0&&noOther(p);},
-    title:'König + Bauer vs König',
-    goals:['König auf die 6. Reihe VOR den Bauern bringen (Ke6 bei e-Bauer)','Opposition gewinnen: Könige direkt gegenüber, 1 Feld Abstand, Gegner am Zug','Schlüsselfelder besetzen — 2 Felder vor dem Bauern (e-Bauer → d6, e6, f6)','Erst dann: Bauer vorrücken'],
-    goalOne:'König vor den Bauern auf die 6. Reihe bringen und Opposition halten.',
-    warnings:['⚠️ Bauer zu früh vorschieben ohne König davor = Remis!','⚠️ König hinter dem Bauern verliert die Opposition','⚠️ Bauer auf 7. Reihe ohne König davor kann Patt sein'],
-    tip:'💡 König MUSS auf die 6. Reihe vor den Bauern. Dann ist Sieg garantiert — egal was Schwarz macht.'
-  },
-  {
-    id:'kpp_vs_k',priority:85,
-    match:function(p){return p.wP===2&&p.bP===0&&noOther(p);},
-    title:'König + 2 Bauern vs König',
-    goals:['Verbundene Bauern gemeinsam vorrücken — sie schützen sich gegenseitig','König aktiv halten — schwarzen König von den Bauern fernhalten','Einen Bauern opfern um den anderen durchmarschieren zu lassen','Außenfreibauer ist am stärksten (zieht schwarzen König weg)'],
-    warnings:['⚠️ Bauern nie einzeln ohne Königsunterstützung vorrücken','⚠️ Zwei Randbauern (a+h) gegen König können Remis sein','⚠️ Pattfallen: niemals den schwarzen König einmauern ohne Fluchtweg'],
-    tip:'💡 Zwei verbundene Bauern auf der 6. Reihe gewinnen immer — sie können nicht beide gestoppt werden.'
-  },
-  {
-    id:'kppp_vs_kp_more',priority:80,
-    match:function(p){return p.wP>=2&&p.bP>=1&&noOther(p)&&p.wP>p.bP;},
-    title:'Bauernmehrheit — Freibauern schaffen',
-    goals:['Außenfreibauern schaffen: Mehrheitsbauern auf dem Flügel ohne Gegenbauern nutzen','Ablenkungsmanöver: Freibauer zwingt schwarzen König auf diesen Flügel','Einbruch: Weißer König bricht auf der leer gewordenen anderen Seite ein','Bauernmehrheit systematisch verwandeln'],
-    warnings:['⚠️ Falschen Freibauern schaffen — Außenfreibauer ist stärker als Mittelfreibauer','⚠️ Passiver König verliert auch mit Mehrbauer','⚠️ Zugzwang berechnen — manchmal ist Warten stärker als Vorrücken'],
-    tip:'💡 Außenfreibauer = Ablenkung. Er zwingt schwarzen König an den Rand, dann bricht weißer König auf der anderen Seite ein.'
-  },
-  {
-    id:'kp_vs_kp_sym',priority:75,
-    match:function(p){return p.wP>=1&&p.bP>=1&&noOther(p)&&p.wP===p.bP;},
-    title:'Symmetrisches Bauernendspiel',
-    goals:['Opposition gewinnen — bestimmt wer als erstes einbricht','Durchbruch berechnen: Bauernopfer um Freibauern zu schaffen','König zentralisieren — aktiver König gewinnt','Fernopposition: ungerade Abstände zwischen den Königen bevorzugen'],
-    goalOne:'Opposition gewinnen und als Erster mit dem König einbrechen.',
-    warnings:['⚠️ Bauernschwächungen ohne Gegenleistung vermeiden','⚠️ Zugzwang-Fallen (Minenfelder) vor dem Einmarsch berechnen','⚠️ Symmetrie täuscht — wer am Zug ist entscheidet alles'],
-    tip:'💡 In symmetrischen Stellungen gewinnt wessen König zuerst auf die 5. Reihe des Gegners einbricht.'
-  },
-  {
-    id:'qq_vs_k',priority:96,
-    match:function(p){
-      return p.wQ>=2&&p.wP===0&&p.wR===0&&p.wB===0&&p.wN===0
-        &&p.bQ===0&&p.bR===0&&p.bB===0&&p.bN===0&&p.bP===0;
-    },
-    title:'Zwei Damen vs König',
-    goals:['Matt in wenigen Zügen erzwingen — zwei Damen mattieren ohne weißen König (klassisch: Damen kooperieren)','Eine Dame als „Netz“, die andere liefert Schach oder stellt ein','Schwarzen König zuerst an den Brettsrand drängen','Optional: eigenen König einbeziehen wenn nötig — verhindert Patt und hilft beim Einengen'],
-    warnings:['⚠️ Zu früh zugeben — mit zwei Damen ist Matt immer möglich, aber Patt vermeiden wenn der König zu weit weg ist','⚠️ Dame nicht so stellen dass der schwarze König patt steht bevor Matt droht','⚠️ Zeit nicht verschwenden — systematisch einengen'],
-    tip:'💡 Standardidee: Eine Dame begrenzt das Feld, die zweite setzt Matt. Ohne weißen König in der Nähe: beide Damen bilden eine kleine „Fangzone“.'
-  },
-  {
-    id:'q_vs_k',priority:94,
-    match:function(p){
-      return p.wQ===1&&p.wP===0&&p.wR===0&&p.wB===0&&p.wN===0
-        &&p.bQ===0&&p.bR===0&&p.bB===0&&p.bN===0&&p.bP===0;
-    },
-    title:'Dame vs König (ohne Bauern)',
-    goals:['Ohne eigenen König geht kein Matt — weißen König aktiv zur Hilfe holen','Box-Methode: schwarzen König mit der Dame an den Rand drängen','Abstand halten: Dame nicht zu nah stellen (Patt!)','Mattbild kennen: König und Dame kooperieren am Rand oder in der Ecke'],
-    warnings:['⚠️ PATT ist die Hauptgefahr — Dame blockiert alle Felder, schwarzer König darf nicht ziehen = Remis','⚠️ Dame allein reicht nicht — ohne weißen König gibt es kein reguläres Matt','⚠️ Matt in der Ecke oder am Rand üben — Mittelfeld-Matt braucht Königsnähe'],
-    tip:'💡 Merksatz: Erst den schwarzen König mit der Dame in die Ecke treiben, dann den weißen König heranführen und zuletzt die Dame für Matt einsetzen.'
-  },
-  {
-    id:'q_vs_q',priority:71,
-    match:function(p){
-      return p.wQ>=1&&p.bQ>=1&&p.wR===0&&p.wB===0&&p.wN===0&&p.bR===0&&p.bB===0&&p.bN===0;
-    },
-    title:'Dame vs Dame',
-    goals:['Damentausch nur wenn die entstehende Unterzahl gewonnen oder remis sicher ist','Königssicherheit zuerst: Schachflucht und Dauerschach des Gegners im Blick','Tempo und Zugzwang — oft entscheidet ein einziges Tempo','Bauern im Damentausch: Freibauer oder Durchbruch nach Tausch kalkulieren'],
-    warnings:['⚠️ Dauerschach und ewige Verfolgung — Remis ist oft drin wenn der schwächere König offen steht','⚠️ Falschen Damentausch — aus Gewinn wird Remis oder Verlust','⚠️ Königsangriffe unterschätzen — eine Dame kann matt drohen sobald der eigene König schwach steht'],
-    tip:'💡 Bei K+D vs K+D zählt meist: wer den gegnerischen König zuerst in Bedrängnis bringt oder den richtigen Tauschzeitpunkt wählt.'
-  },
-  {
-    id:'q_vs_alone',priority:70,
-    match:function(p){return p.wQ>=1&&p.bQ===0&&p.bR===0&&p.bB===0&&p.bN===0&&p.bP===0;},
-    title:'Dame + Bauern vs nackter König',
-    goals:['Schwarzen König an den Rand treiben (Box-Methode mit der Dame)','Weißen König einsetzen — Dame allein kann nicht mattsetzen','Box immer kleiner ziehen bis Matt','Kein Patt durch zu enge Einschränkung!'],
-    warnings:['⚠️ PATT! Dame zu nah → schwarzer König hat keine Züge = Remis','⚠️ Dame allein kann nicht mattsetzen — König MUSS mitspielen','⚠️ Bauer nicht zu nah an schwarzen König schieben — Pattgefahr'],
-    tip:'💡 Box-Methode: Mit Dame ein immer kleiner werdendes Rechteck um den schwarzen König ziehen, dann König einmarschieren lassen.'
-  },
-  {
-    id:'qp_vs_q',priority:72,
-    match:function(p){return p.wQ>=1&&p.bQ>=1&&p.wP>=1&&p.bP===0;},
-    title:'Dame + Bauer vs Dame',
-    goals:['Bauer auf die 7. Reihe bringen — das ist das Hauptziel','Dauerschach vermeiden: König nicht am Rand, möglichst zentralisiert','Damentausch erzwingen wenn Bauer weit genug vorgedrungen','Schwarze Dame vom Bauer fernhalten'],
-    warnings:['⚠️ Turm- (a/h) und Läuferbauer (c/f) auf 7. Reihe mit König dahinter = nur REMIS!','⚠️ Dauerschach: schwarze Dame rettet die Partie wenn König offen steht','⚠️ Damentausch nur erzwingen wenn das entstehende Bauernendspiel gewonnen ist'],
-    tip:'💡 Nur d- und e-Bauer auf 7. Reihe gewinnen sicher. Alle anderen Bauern haben Remismöglichkeiten für Schwarz!'
-  },
-  {
-    id:'passed_race',priority:60,
-    match:function(p){return p.wP>=1&&p.bP>=1&&noOther(p);},
-    title:'Freibauer — Quadratregel & Rennen',
-    goals:['Quadratregel prüfen: Kann schwarzer König den Bauern im Quadrat stoppen?','Umwandlung mit Schach anstreben — spart 1 Tempo','Opposition nutzen um gegnerischen Freibauern zu blockieren','Tempozählen: Wer verwandelt zuerst? Bei Gleichstand: Schach beim Umwandeln'],
-    warnings:['⚠️ Quadratregel vergessen — schwarzer König läuft scheinbar hinterher aber stoppt den Bauern','⚠️ Umwandlung ohne Schach kann verlieren wenn Gegner sofort umwandelt','⚠️ Remis wenn beide gleichzeitig Dame bekommen und Dauerschach möglich'],
-    tip:'💡 Quadrat vom Bauern zur 8. Reihe zeichnen: Ist der schwarze König DARIN → stoppt er den Bauern. DRAUSSEN → Umwandlung!'
-  },
-  {
-    id:'general',priority:1,
-    match:function(p){return true;},
-    title:'Bauernendspiel — Grundprinzipien',
-    goals:['König aktivieren — im Endspiel ist der König eine starke Figur!','Freibauern schaffen — Bauer ohne Gegenbauern auf seiner Linie','Opposition halten — wer die Opposition hat, bestimmt den Einbruch','Zugzwang nutzen — Gegner zum Rückzug zwingen'],
-    warnings:['⚠️ Passiver König verliert fast immer','⚠️ Bauern zu früh vorrücken ohne Königsunterstützung','⚠️ Pattfallen beim Einengen des gegnerischen Königs übersehen'],
-    tip:'💡 Die drei goldenen Regeln: 1) König aktivieren, 2) Freibauern schaffen, 3) Opposition halten.'
-  }
-];
-
-function noOther(p){return p.wQ===0&&p.bQ===0&&p.wR===0&&p.bR===0&&p.wB===0&&p.bB===0&&p.wN===0&&p.bN===0;}
-
-function getPieceCounts(){
-  if(!game)return null;
-  var b=game.board();
-  var p={wP:0,bP:0,wK:0,bK:0,wQ:0,bQ:0,wR:0,bR:0,wB:0,bB:0,wN:0,bN:0,wPfiles:[],bPfiles:[]};
-  for(var r=0;r<8;r++) for(var c=0;c<8;c++){
-    var sq=b[r][c]; if(!sq)continue;
-    var k=(sq.color==='w'?'w':'b')+sq.type.toUpperCase();
-    p[k]++;
-    if(sq.type==='p'){ if(sq.color==='w')p.wPfiles.push(c); else p.bPfiles.push(c); }
-  }
-  return p;
+// ── ENDGAME CATALOG (Modul: endgame-catalog.js) ───────────────────
+function getPieceCounts() {
+  if (!game) return null;
+  return EndspielgottCatalog.getPieceCountsFromGame(game);
 }
-
-function detectSituation(){
-  var p=getPieceCounts(); if(!p)return null;
-  var matches=ENDGAME_CATALOG.filter(function(e){try{return e.match(p);}catch(e){return false;}});
-  if(!matches.length)return null;
-  matches.sort(function(a,b){return b.priority-a.priority;});
-  return matches[0];
+function detectSituation() {
+  return EndspielgottCatalog.detectSituationFromGame(game);
 }
 
 var sitOpen=true, warnOpen=false;
@@ -1709,10 +1633,12 @@ function updateSituation(){
   var g1=document.getElementById('sit-goal-one');
   if(g1) g1.textContent=(sit.goalOne || (sit.goals && sit.goals[0]) || '—');
 
-  // Goals
+  // Plan (goals = nummerierte Schritte, Reihenfolge beachten)
   var gl=document.getElementById('sit-goals');
-  gl.innerHTML=sit.goals.map(function(g){
-    return '<div class="sit-item"><div class="sit-bullet">✓</div><div class="sit-text">'+g+'</div></div>';
+  var steps=sit.goals||[];
+  gl.innerHTML=steps.map(function(g,i){
+    var n=String(i+1);
+    return '<div class="sit-item"><div class="sit-bullet" aria-hidden="true">'+n+'</div><div class="sit-text">'+g+'</div></div>';
   }).join('');
 
   // Warnings
