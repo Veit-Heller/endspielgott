@@ -149,7 +149,7 @@ h1 span{color:#6B3F1A;}
 .move-empty{display:none;position:absolute;inset:0;align-items:center;justify-content:center;font-size:14px;font-weight:900;color:#8a7d70;letter-spacing:.01em;text-align:center;padding:0 14px;}
 .move-card.is-empty .move-box{display:none;}
 .move-card.is-empty .move-empty{display:flex;}
-.move-card.is-empty .move-actions{display:none;}
+/* move-actions bleibt sichtbar — Undo muss nach resetRatingCard() weiter klickbar sein */
 .move-card.hidden-for-search{display:none;}
 .play-pbar.hidden-for-search{display:none;}
 .sit-panel.hidden-for-search{display:none !important;}
@@ -1190,6 +1190,22 @@ function shuffled8() {
 // ── GAME STATE ────────────────────────────────────────
 var game = null, sel = null, lastMv = null, mvCnt = 1, hist = [], busy = false;
 var evalOutcome = null; // null | 'white-win' | 'black-win' | 'draw'
+/** Erhöht bei neuer Partie / Undo — async Engine-Callbacks brechen ab, kein hist/game-Müll */
+var playGen = 0;
+function bumpPlayGen() {
+  playGen++;
+}
+/** true = stale, Callback beenden (busy frei, Zug-Anzeige passend) */
+function abortIfStaleMoveGen(gen) {
+  if (gen === playGen) return false;
+  busy = false;
+  if (!game) {
+    setTurnDot(true);
+    return true;
+  }
+  setTurnDot(!game.game_over() && game.turn() === 'w');
+  return true;
+}
 
 function setEvalOutcome(outcome) {
   evalOutcome = outcome;
@@ -1202,6 +1218,7 @@ function setEvalOutcome(outcome) {
 }
 
 function startGame(fen, initialCp) {
+  bumpPlayGen();
   game = new Chess(fen);
   sel = null; lastMv = null; mvCnt = 1;
   hist = [{ fen: fen, z: 1 }];
@@ -1363,6 +1380,7 @@ function setTurnDot(yourTurn) {
 // ── AFTER PLAYER MOVE ─────────────────────────────────
 function afterMove(fenBefore, move) {
   busy = true;
+  var myGen = playGen;
   setTurnDot(false);
 
   // Option 2: Bewertungen immer als Leaf-Eval NACH dem jeweiligen Zug
@@ -1376,6 +1394,8 @@ function afterMove(fenBefore, move) {
     evalPosition(fenBefore, MOVE_ANALYSIS_DEPTH),   // cp before (optional context)
     evalPosition(fenAfterPlayer, MOVE_ANALYSIS_DEPTH) // cp after player (leaf)
   ]).then(function(results) {
+      if (abortIfStaleMoveGen(myGen)) return;
+
       var sfBest = results[0];
       var cpBeforeEval = (results[1] === null || results[1] === undefined) ? 0 : results[1];
       var cpAfterActual = (results[2] === null || results[2] === undefined) ? 0 : results[2];
@@ -1392,8 +1412,16 @@ function afterMove(fenBefore, move) {
         // Important: start Stockfish search AFTER all additional evaluations are done.
         // Otherwise we may send overlapping commands to the same Worker.
         setTimeout(function() {
+          if (abortIfStaleMoveGen(myGen)) return;
           if (game.turn() === 'b' && !checkEnd()) {
-            sfSearch(game.fen(), 14, skillLevel).then(function(oscRes) {
+            var fenBeforeEngine = game.fen();
+            sfSearch(fenBeforeEngine, 14, skillLevel).then(function(oscRes) {
+              if (abortIfStaleMoveGen(myGen)) return;
+              if (game.fen() !== fenBeforeEngine) {
+                busy = false;
+                setTurnDot(!game.game_over() && game.turn() === 'w');
+                return;
+              }
               if (oscRes && oscRes.bestmove && oscRes.bestmove !== '(none)') {
                 var from = oscRes.bestmove.slice(0, 2);
                 var to   = oscRes.bestmove.slice(2, 4);
@@ -1403,6 +1431,7 @@ function afterMove(fenBefore, move) {
                   lastMv = { from: from, to: to };
                   hist.push({ fen: game.fen(), z: mvCnt });
                   evalFull(game.fen(), 8).then(function(sfPost) {
+                    if (abortIfStaleMoveGen(myGen)) return;
                     if (sfPost) setEval(sfPost.cp);
                     renderBoard();
                     updateSituation();
@@ -1411,11 +1440,11 @@ function afterMove(fenBefore, move) {
                 }
               }
               busy = false;
-              setTurnDot(true);
+              setTurnDot(!game.game_over() && game.turn() === 'w');
             });
           } else {
             busy = false;
-            setTurnDot(true);
+            setTurnDot(!game.game_over() && game.turn() === 'w');
           }
         }, 200);
       }
@@ -1468,6 +1497,7 @@ function afterMove(fenBefore, move) {
           scheduleTobold();
         } else {
           evalPosition(fenAfterBest, MOVE_ANALYSIS_DEPTH).then(function(cpBestAfterEval) {
+            if (abortIfStaleMoveGen(myGen)) return;
             if (cpBestAfterEval === null || cpBestAfterEval === undefined) cpBestAfterEval = cpAfterActual;
             var cpLoss = Math.max(0, cpBestAfterEval - cpAfterActual);
             askClaudeForFeedback(
@@ -1480,6 +1510,10 @@ function afterMove(fenBefore, move) {
           });
         }
       }
+  }).catch(function() {
+    if (myGen !== playGen) return;
+    busy = false;
+    if (game) setTurnDot(!game.game_over() && game.turn() === 'w');
   });
 }
 
@@ -1914,7 +1948,9 @@ function checkEnd() {
 
 // ── UNDO ──────────────────────────────────────────────
 function undoLast() {
+  if (generating) return;
   if (!hist || hist.length <= 1) { setGameStatus('Das ist bereits die Ausgangsstellung.', ''); return; }
+  bumpPlayGen();
   // Ein Klick = ein Halbzug zurück (zuerst letzter Schwarz-Zug, dann dein Weiß-Zug usw.).
   hist.pop();
   var tip = hist[hist.length - 1];
