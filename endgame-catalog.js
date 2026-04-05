@@ -453,6 +453,41 @@
       tip: '💡 Turmendspiele leben von Schnittfeldern und Königsangriff: wer zuerst den gegnerischen König bedrängt, hat oft die praktische Initiative.',
     },
     {
+      id: 'krp_vs_krp',
+      priority: 92,
+      match: function (p) {
+        return (
+          p.wK === 1 &&
+          p.bK === 1 &&
+          p.wR === 1 &&
+          p.bR === 1 &&
+          p.wP >= 1 &&
+          p.bP >= 1 &&
+          p.wP === p.bP &&
+          p.wQ === 0 &&
+          p.bQ === 0 &&
+          p.wB === 0 &&
+          p.bB === 0 &&
+          p.wN === 0 &&
+          p.bN === 0
+        );
+      },
+      title: 'Turm + Bauern vs Turm + Bauern',
+      goals: [
+        'Freibauer erkennen: wer zuerst durchbricht, zwingt oft den gegnerischen Turm oder König.',
+        'Turm hinter dem Freibauer (klassisch) oder vom Rand aus die gegnerische Seite schneiden.',
+        'Lucena- und Philidor-Ideen im Kopf: Wettlauf, Brücke, Turm von der Seite gegen den König.',
+        'Gegnerischen Turm aktiv halten oder binden — passiver Turm + aktiver Freibauer entscheidet oft.',
+      ],
+      goalOne: 'Freibauer und Turm koordinieren — Aktivität vor dem gegnerischen Turm.',
+      warnings: [
+        '⚠️ Turm zu früh tauschen — aus Gewinn wird schnell technisches Remis',
+        '⚠️ König zu weit weg vom Bauernlauf — der Turm allein stoppt selten alles',
+        '⚠️ Falschen Flügel wählen — manchmal gewinnt nur der zweite Freibauer',
+      ],
+      tip: '💡 Turmendspiele mit Bauern sind Partie-Endspiele: meist zählt ein einziger Freibauer mehr als „allgemeine“ Turmaktivität.',
+    },
+    {
       id: 'rook_endgame_general',
       priority: 9,
       match: function (p) {
