@@ -362,6 +362,13 @@ input[type=range]{flex:1;accent-color:#8B5E3C;}
         <button type="button" class="pb" onclick="setPawns(5)">5</button>
       </div>
     </div>
+    <div class="setup-row" id="rook-variant-row" style="display:none;">
+      <span class="setup-lbl">Turm-Stellung:</span>
+      <div class="pawn-btns">
+        <button type="button" class="pb rook-var-btn active" data-variant="krk" onclick="setRookVariant('krk')">K+T vs K</button>
+        <button type="button" class="pb rook-var-btn" data-variant="krkr" onclick="setRookVariant('krkr')">T vs T</button>
+      </div>
+    </div>
   </div>
 
   <div class="ctrow">
@@ -480,6 +487,10 @@ var pendingResolve = null, pendingLines = [];
 var skillLevel = 4, numPawns = 2;
 /** 'pawns' | 'rook' */
 var gameMode = 'pawns';
+/** Im Turm-Modus: 'krk' = König+Turm vs König, 'krkr' = beide mit Turm */
+var rookVariant = 'krk';
+/** Muss zur Kodierung in parseCPsideToMove passen (Mate → 9000 ± Halbzüge) */
+var EVAL_MATE_BASE = 9000;
 var sfQueue = Promise.resolve(); // serialize Stockfish requests (Worker is single-flight)
 
 function initStockfish() {
@@ -748,6 +759,18 @@ var DIFF_RANGES = { 1:[80,200], 2:[30,150], 3:[10,80] };
 var DIFF_RANGES_ROOK = { 1:[45,220], 2:[12,165], 3:[2,88] };
 var DIFF_LABELS = { 1:'Leicht', 2:'Mittel', 3:'Schwer' };
 var DIFF_DESC   = { 1:'Klarer Vorteil — lerne die Technik', 2:'Realistisches Spiel — muss gearbeitet werden', 3:'Knapper Vorteil — kein Fehler erlaubt' };
+/** K+T vs K: Schwierigkeit = Mattweite (SF) + Stellungsbias; Tooltips fürs Regler-Label */
+var DIFF_DESC_ROOK_KRK = {
+  1:'Schwarzer König eher am Rand — Matt liegt weit weg (lange, aber klare Gewinnführung).',
+  2:'Ausgewogen: weder sofortiges Matt noch endloser Marathonsieg.',
+  3:'Schwarzer König eher zentral — Matt in wenigen Zügen; Genauigkeit und Patt vermeiden.'
+};
+/** Kurztext in der Suchzeile */
+var KRK_SEARCH_HINT = {
+  1:'Matt weit (≥21 Halbzüge laut SF) oder sehr hohe CP',
+  2:'Matt mittel (11–20 HZ)',
+  3:'Matt nah (3–10 HZ)'
+};
 
 function getActiveDiffRange() {
   var tab = gameMode === 'rook' ? DIFF_RANGES_ROOK : DIFF_RANGES;
@@ -756,8 +779,11 @@ function getActiveDiffRange() {
 
 function updDiff(v) {
   difficulty = parseInt(v);
-  document.getElementById('diffval').textContent = DIFF_LABELS[v];
-  document.getElementById('diffval').title = DIFF_DESC[v];
+  var el = document.getElementById('diffval');
+  if (!el) return;
+  el.textContent = DIFF_LABELS[v];
+  if (gameMode === 'rook' && rookVariant === 'krk') el.title = DIFF_DESC_ROOK_KRK[v] || '';
+  else el.title = DIFF_DESC[v];
 }
 
 function updSkill(v) { skillLevel = parseInt(v); document.getElementById('skval').textContent = 'Skill ' + v; }
@@ -773,10 +799,39 @@ function setGameMode(m) {
   });
   var row = document.getElementById('pawn-count-row');
   if (row) row.style.display = gameMode === 'rook' ? 'none' : '';
+  var rv = document.getElementById('rook-variant-row');
+  if (rv) rv.style.display = gameMode === 'rook' ? '' : 'none';
+  var sl = document.getElementById('diffsl');
+  if (sl) updDiff(sl.value);
+}
+
+function setRookVariant(v) {
+  rookVariant = v === 'krkr' ? 'krkr' : 'krk';
+  document.querySelectorAll('#rook-variant-row .rook-var-btn').forEach(function(b) {
+    b.classList.toggle('active', b.getAttribute('data-variant') === rookVariant);
+  });
+  var sl = document.getElementById('diffsl');
+  if (sl) updDiff(sl.value);
+}
+
+/** K+T vs K: Weiß gewinnt immer — Filter über Matt-Halbzüge (oder CP-Fallback bei flacher Tiefe). */
+function cpMatchesKrK(cp, diff) {
+  if (cp == null || cp <= 0) return false;
+  if (cp > EVAL_MATE_BASE) {
+    var m = cp - EVAL_MATE_BASE;
+    if (diff === 1) return m >= 21;
+    if (diff === 2) return m >= 11 && m <= 20;
+    if (diff === 3) return m >= 3 && m <= 10;
+    return false;
+  }
+  if (diff === 1) return cp >= 450;
+  if (diff === 2) return cp >= 200 && cp < 500;
+  if (diff === 3) return cp >= 90 && cp < 300;
+  return false;
 }
 
 function buildFenForMode() {
-  if (gameMode === 'rook') return buildFenRook();
+  if (gameMode === 'rook') return rookVariant === 'krk' ? buildFenRookKrk() : buildFenRook();
   return buildFen(numPawns);
 }
 // API-Key wird NUR serverseitig genutzt (Vercel Env: ANTHROPIC_API_KEY)
@@ -870,8 +925,20 @@ function generatePosition() {
   btn.disabled = true;
   btn.textContent = '⏳ Suche Stellung…';
   var range = getActiveDiffRange();
-  var modeLbl = gameMode === 'rook' ? 'Turm' : 'Bauern';
-  setGameStatus('Suche ' + modeLbl + ' — ' + DIFF_LABELS[difficulty] + ' (' + (range[0]/100).toFixed(2) + ' bis +' + (range[1]/100).toFixed(2) + ')…', '');
+  var modeLbl = 'Bauern';
+  var rangeTxt = '';
+  if (gameMode === 'rook') {
+    if (rookVariant === 'krk') {
+      modeLbl = 'K+T vs K';
+      rangeTxt = KRK_SEARCH_HINT[difficulty] || '';
+    } else {
+      modeLbl = 'T vs T';
+      rangeTxt = (range[0] / 100).toFixed(2) + ' bis +' + (range[1] / 100).toFixed(2) + ' (Bauerneinheiten)';
+    }
+  } else {
+    rangeTxt = (range[0] / 100).toFixed(2) + ' bis +' + (range[1] / 100).toFixed(2) + ' (Bauerneinheiten)';
+  }
+  setGameStatus('Suche ' + modeLbl + ' — ' + DIFF_LABELS[difficulty] + ' (' + rangeTxt + ')…', '');
   startBoardShuffleAnim();
   tryNextPosition(0);
 }
@@ -906,8 +973,13 @@ function tryNextPosition(attempt) {
     return;
   }
   evalPosition(fen, GENERATOR_STOCKFISH_DEPTH).then(function(cp) {
-    var range = getActiveDiffRange();
-    if (cp === null || cp < range[0] || cp > range[1]) {
+    var ok;
+    if (gameMode === 'rook' && rookVariant === 'krk') ok = cpMatchesKrK(cp, difficulty);
+    else {
+      var range = getActiveDiffRange();
+      ok = cp != null && cp >= range[0] && cp <= range[1];
+    }
+    if (!ok) {
       tryNextPosition(attempt + 1);
       return;
     }
@@ -974,6 +1046,82 @@ function buildFen(n) {
     rows.push(s);
   }
   return rows.join('/') + ' w - - 0 1';
+}
+
+function randomPickPair(arr) {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
+/**
+ * König + Turm vs König (kein schwarzer Turm).
+ * Schwierigkeit steuert typische schwarze Königstellung: Rand = leicht, Mitte = schwer.
+ */
+function buildFenRookKrk() {
+  var d = difficulty;
+  for (var attempt = 0; attempt < 320; attempt++) {
+    var board = [];
+    for (var z = 0; z < 8; z++) board.push([null, null, null, null, null, null, null, null]);
+    var bKr, bKc;
+    if (d === 1) {
+      var edgeOpts = [];
+      for (var er = 0; er < 8; er++) {
+        for (var ec = 0; ec < 8; ec++) {
+          var rank = 8 - er;
+          if (ec === 0 || ec === 7 || rank === 1 || rank === 8) edgeOpts.push([er, ec]);
+        }
+      }
+      var bc = randomPickPair(edgeOpts);
+      bKr = bc[0];
+      bKc = bc[1];
+    } else if (d === 3) {
+      bKr = randomPickPair([3, 4]);
+      bKc = randomPickPair([2, 3, 4, 5]);
+    } else {
+      bKr = randomPickPair([2, 3, 4, 5]);
+      bKc = randomPickPair([1, 2, 3, 4, 5, 6]);
+    }
+    board[bKr][bKc] = 'k';
+    var wPlaced = false;
+    for (var t = 0; t < 70 && !wPlaced; t++) {
+      var wKr = Math.floor(Math.random() * 8);
+      var wKc = Math.floor(Math.random() * 8);
+      if (board[wKr][wKc]) continue;
+      if (Math.abs(wKr - bKr) <= 1 && Math.abs(wKc - bKc) <= 1) continue;
+      board[wKr][wKc] = 'K';
+      wPlaced = true;
+    }
+    if (!wPlaced) continue;
+    var empty = [];
+    for (var r = 0; r < 8; r++) {
+      for (var c = 0; c < 8; c++) {
+        if (!board[r][c]) empty.push([r, c]);
+      }
+    }
+    if (empty.length === 0) continue;
+    var rp = randomPickPair(empty);
+    board[rp[0]][rp[1]] = 'R';
+    var rows = [];
+    for (var r = 0; r < 8; r++) {
+      var s = '', e = 0;
+      for (var c = 0; c < 8; c++) {
+        if (board[r][c]) {
+          if (e) {
+            s += e;
+            e = 0;
+          }
+          s += board[r][c];
+        } else e++;
+      }
+      if (e) s += e;
+      rows.push(s);
+    }
+    var fen = rows.join('/') + ' w - - 0 1';
+    try {
+      var g = new Chess(fen);
+      if (g && g.moves().length > 0 && !g.in_check() && kingsWellSeparated(g)) return fen;
+    } catch (e) {}
+  }
+  return null;
 }
 
 /** König + Turm vs König + Turm, keine Bauern; zufällig bis FEN legal und Züge existieren */
@@ -1085,7 +1233,14 @@ function startGame(fen, initialCp) {
     'Gegnerischen Turm nicht leicht tauschen — oft entscheidet die bessere Königstellung.',
     '7.-Reihe-Idee: Turm tief kann den gegnerischen König wie festnageln.'
   ];
-  var tips = gameMode === 'rook' ? tipsRook : tipsPawn;
+  var tipsRookKrk = [
+    'K+T vs K: erst den weißen König aktivieren — der Turm sperrt Linien, der König drängt.',
+    'Schwarzen König zur Kante oder Ecke leiten, dann Mattbild üben (immer Luft lassen — kein Patt).',
+    'Turm nicht zu weit weg: er begrenzt Felder, während der eigene König näher rückt.',
+    'Wenn der schwarze König zentral steht: kleine Schritte, keine unnötigen Schachopfer.',
+    'Klassische „Box“: mit dem Turm das Brett für den schwarzen König Schritt für Schritt verkleinern.'
+  ];
+  var tips = gameMode === 'rook' ? (rookVariant === 'krk' ? tipsRookKrk : tipsRook) : tipsPawn;
   var tip = tips[Math.floor(Math.random() * tips.length)];
   setGameStatus('', '');
   setTurnDot(true);
