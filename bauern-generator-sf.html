@@ -3,7 +3,17 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Bauern- &amp; Turmendspiel-Generator</title>
+<meta name="description" content="Spiel gegen Tobold (Stockfish): Bauern- oder Turmendspiele, Schwierigkeit wählbar. Challenge-Link: gleiche Stellung, gleiche Engine-Stärke — wie schnell schaffst du Matt?">
+<meta name="theme-color" content="#8B5E3C">
+<meta property="og:site_name" content="Endspielgott">
+<meta property="og:title" content="Endspielgott — Endspiel vs. Tobold">
+<meta property="og:description" content="Bauern- oder Turmendspiel trainieren. Tobold-Stärke &amp; Schwierigkeit einstellen, Challenge-Link teilen: identische Stellung für deine Freunde.">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="de_DE">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Endspielgott — Endspiel vs. Tobold">
+<meta name="twitter:description" content="Bauern- oder Turmendspiel vs. Tobold (Stockfish). Challenge-Link = gleiche Stellung &amp; gleiche Einstellungen.">
+<title>Endspielgott — Bauern- &amp; Turmendspiel</title>
 <script src="chess.js"></script>
 <script src="endgame-catalog.js"></script>
 <script src="stockfish-multipv-claude.js"></script>
@@ -200,7 +210,8 @@ h1 span{color:#6B3F1A;}
 #board.board-shuffle{pointer-events:none;}
 #board.board-shuffle .sq{cursor:wait!important;}
 #board.board-shuffle .sq svg{display:block;}
-.btnrow{display:flex;gap:9px;width:100%;}
+.btnrow{display:flex;flex-wrap:wrap;gap:9px;width:100%;}
+.btnrow > .btn{flex:1;min-width:130px;}
 .btn{flex:1;padding:10px;border-radius:12px;font-family:'Nunito',sans-serif;font-weight:800;font-size:13px;border:none;cursor:pointer;transition:transform .1s;}
 .btn:active{transform:scale(.96);}
 .btnp{background:#8B5E3C;color:#fff;box-shadow:0 4px 0 #6B3F1A;}
@@ -344,6 +355,7 @@ input[type=range]{flex:1;accent-color:#8B5E3C;}
 
   <div class="btnrow">
     <button class="btn btnp" id="gen-btn" onclick="generatePosition()" disabled>⏳ Stockfish lädt…</button>
+    <button type="button" class="btn btns" id="share-challenge-btn" onclick="copyChallengeLink()" title="Link mit Stellung + Endspiel-Art + Schwierigkeit + Tobold-Skill — beim Öffnen sind alle Regler gleich">🔗 Challenge-Link</button>
   </div>
 
   <!-- game status panel removed (requested) -->
@@ -508,6 +520,7 @@ function initStockfish() {
         var btn = document.getElementById('gen-btn');
         btn.textContent = '🎲 Neue Stellung generieren';
         btn.disabled = false;
+        if (tryStartChallengeFromUrl()) return;
         generatePosition();
         return;
       }
@@ -1019,6 +1032,182 @@ function kingsWellSeparated(g) {
   // Kings must be at least 2 squares apart in both row and column (or combined)
   var dr=Math.abs(wKr-bKr), dc=Math.abs(wKc-bKc);
   return (dr>=2||dc>=2) && !(dr<=1&&dc<=1);
+}
+
+function countPiecesInFenBoard(fen) {
+  var part = fen.split(' ')[0];
+  return {
+    R: (part.match(/R/g) || []).length,
+    r: (part.match(/r/g) || []).length,
+    P: (part.match(/P/g) || []).length,
+    p: (part.match(/p/g) || []).length
+  };
+}
+
+/**
+ * Nur Stellungen aus diesem Generator: K+T vs K / T+T+Bauer / reine Bauern.
+ * Wenn ?fen= ohne mode=, damit die UI zum Brett passt.
+ */
+function inferChallengeModeFromFen(fen) {
+  var c = countPiecesInFenBoard(fen);
+  if (c.R === 1 && c.r === 0 && c.P === 0 && c.p === 0) {
+    setGameMode('rook');
+    setRookVariant('krk');
+    return;
+  }
+  if (c.R >= 1 && c.r >= 1 && (c.P > 0 || c.p > 0)) {
+    setGameMode('rook');
+    setRookVariant('krrp');
+    return;
+  }
+  if (c.R === 0 && c.r === 0 && (c.P > 0 || c.p > 0)) {
+    setGameMode('pawns');
+    var n = Math.max(c.P, c.p);
+    if (n >= 1 && n <= 5) setPawns(n);
+  }
+}
+
+function maybeInferChallengeModeFromFen(fen) {
+  var params = new URLSearchParams(window.location.search);
+  if (params.get('mode')) return;
+  inferChallengeModeFromFen(fen);
+}
+
+/**
+ * Sofort beim Laden: Modus, Variant, Schwierigkeit, Tobold-Skill wie im Link (nicht erst nach Stockfish).
+ * Aufruf vor initStockfish(); tryStartChallengeFromUrl wendet dieselben Params erneut an (idempotent).
+ */
+function syncChallengeSettingsFromUrl() {
+  var params = new URLSearchParams(window.location.search);
+  var fenEnc = params.get('fen');
+  var has =
+    fenEnc ||
+    params.has('skill') ||
+    params.get('mode') ||
+    params.get('rv') ||
+    params.get('diff') ||
+    params.get('np');
+  if (!has) {
+    updSkill(4);
+    return;
+  }
+  applyChallengeQueryParams();
+  if (fenEnc) {
+    try {
+      var fen0 = decodeURIComponent(fenEnc.replace(/\+/g, ' '));
+      new Chess(fen0);
+      maybeInferChallengeModeFromFen(fen0);
+    } catch (e) {}
+  }
+}
+
+/** Query-Parameter für geteilte Challenges: fen, mode, rv, skill, diff, np (optional). */
+function applyChallengeQueryParams() {
+  var params = new URLSearchParams(window.location.search);
+  var sk = params.get('skill');
+  if (sk !== null && sk !== '') {
+    var n = parseInt(sk, 10);
+    if (!isNaN(n) && n >= 0 && n <= 20) {
+      var sl = document.getElementById('sksl');
+      if (sl) sl.value = String(n);
+      updSkill(n);
+    }
+  }
+  var md = params.get('mode');
+  if (md === 'rook') setGameMode('rook');
+  else if (md === 'pawns') setGameMode('pawns');
+  var rv = params.get('rv');
+  if (rv === 'krrp') setRookVariant('krrp');
+  else if (rv === 'krk') setRookVariant('krk');
+  var df = params.get('diff');
+  if (df !== null && df !== '') {
+    var d = parseInt(df, 10);
+    if (!isNaN(d) && d >= 1 && d <= 3) {
+      var dsl = document.getElementById('diffsl');
+      if (dsl) {
+        dsl.value = String(d);
+        updDiff(String(d));
+      }
+    }
+  }
+  var np = params.get('np');
+  if (np !== null && np !== '') {
+    var nn = parseInt(np, 10);
+    if (!isNaN(nn) && nn >= 1 && nn <= 5) setPawns(nn);
+  }
+}
+
+/**
+ * ?fen=… in URL: dieselbe Startstellung wie nach dem Generieren (Weiß am Zug).
+ * @returns {boolean} true wenn ein Ladevorgang gestartet wurde
+ */
+function tryStartChallengeFromUrl() {
+  if (!sfReady) return false;
+  var params = new URLSearchParams(window.location.search);
+  var fenEnc = params.get('fen');
+  if (!fenEnc) return false;
+  var fen = decodeURIComponent(fenEnc.replace(/\+/g, ' '));
+  var g = null;
+  try {
+    g = new Chess(fen);
+  } catch (e) {
+    return false;
+  }
+  if (!g || g.turn() !== 'w' || g.moves().length === 0 || g.in_check() || !kingsWellSeparated(g)) return false;
+
+  applyChallengeQueryParams();
+  maybeInferChallengeModeFromFen(fen);
+
+  generating = true;
+  var btn = document.getElementById('gen-btn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Lade Challenge…';
+
+  evalPosition(fen, GENERATOR_STOCKFISH_DEPTH).then(function(cp) {
+    stopBoardShuffleAnim();
+    startGame(fen, cp != null ? cp : 0);
+    btn.disabled = false;
+    btn.textContent = '🎲 Neue Stellung generieren';
+    generating = false;
+  });
+  return true;
+}
+
+/** Link: hist[0].fen + mode, rv, skill (Tobold), diff (Schwierigkeit), np — identische Challenge. */
+function copyChallengeLink() {
+  if (!hist || !hist.length || !hist[0] || !hist[0].fen) {
+    alert('Erst eine Stellung laden — „Neue Stellung generieren“ warten, bis du am Zug bist.');
+    return;
+  }
+  var startFen = hist[0].fen;
+  var base = (window.location.origin && window.location.origin !== 'null')
+    ? (window.location.origin + window.location.pathname)
+    : (window.location.href.split('?')[0]);
+  var p = new URLSearchParams();
+  p.set('fen', startFen);
+  p.set('mode', gameMode);
+  p.set('rv', rookVariant);
+  p.set('skill', String(skillLevel));
+  p.set('diff', String(difficulty));
+  p.set('np', String(numPawns));
+  var url = base + '?' + p.toString();
+
+  function feedback() {
+    var b = document.getElementById('share-challenge-btn');
+    if (b) {
+      var t = b.textContent;
+      b.textContent = '✓ Kopiert';
+      setTimeout(function() { b.textContent = t; }, 2200);
+    }
+  }
+
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(url).then(feedback).catch(function() {
+      window.prompt('Link markieren und kopieren:', url);
+    });
+  } else {
+    window.prompt('Link markieren und kopieren:', url);
+  }
 }
 
 function buildFen(n) {
@@ -2103,7 +2292,7 @@ function toggleWarnings(){
 }
 
 // ── INIT ──────────────────────────────────────────────
-updSkill(4);
+syncChallengeSettingsFromUrl();
 initStockfish();
 </script>
 </body>
