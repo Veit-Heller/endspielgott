@@ -1805,8 +1805,21 @@ function loadExplanation() {
       apiKey: null
     })
   }).then(function(r) {
-    if (!r.ok) return r.json().then(function(err) { throw new Error(err.error || 'API-Fehler'); });
-    return r.json();
+    return r.text().then(function(body) {
+      var t = (body || '').trim();
+      var j = null;
+      try {
+        j = t ? JSON.parse(t) : null;
+      } catch (parseErr) {
+        j = null;
+      }
+      if (!r.ok) {
+        if (j && (j.error || j.message)) throw new Error(String(j.error || j.message));
+        throw new Error(t ? t.slice(0, 500) : ('HTTP ' + r.status + ' ' + (r.statusText || '')));
+      }
+      if (j == null) throw new Error(t ? t.slice(0, 500) : 'Leere API-Antwort');
+      return j;
+    });
   })
     .then(function(d) {
       var raw = (d.content && d.content[0] && d.content[0].text) || '';
