@@ -7,6 +7,7 @@
 <script src="chess.js"></script>
 <script src="endgame-catalog.js"></script>
 <script src="stockfish-multipv-claude.js"></script>
+<script src="explain-prompt.js"></script>
 <script defer src="/_vercel/insights/script.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&display=swap');
@@ -1743,44 +1744,53 @@ function loadExplanation() {
       (lossLine ? (' ' + lossLine) : ''));
 
   var task = ctx.isBestMove
-    ? ('Erkläre kurz, warum \"' + ctx.playerMove + '\" hier passt — nur mit Feldern aus der Tabelle/Stückliste.')
-    : ('Erkläre kurz, warum \"' + (ctx.bestMove || '?') + '\" der Spielerwahl \"' + ctx.playerMove + '\" vorzuziehen war — nur mit Feldern aus der Tabelle/Stückliste.');
+    ? ('Begründe, warum dein Zug \"' + ctx.playerMove + '\" hier zur Wurzelstellung passt — nur mit Feldern aus Tabelle/Stückliste, keine Allgemeinplätze.')
+    : ('Vergleiche deinen Zug \"' + ctx.playerMove + '\" mit dem vorgegebenen besseren Zug \"' + (ctx.bestMove || '?') +
+      '\" — was ändert sich auf dem Brett (konkrete Felder)?');
 
-  var content =
-    'AUFGABE (kurz): Stellung exakt lesen, dann in 1+2 Sätzen erklären.\n\n' +
-    'STELLUNG LESEN (in dieser Reihenfolge prüfen — alle drei müssen zusammenpassen):\n' +
-    '1) FELDER-TABELLE: jedes Feld a1–h8 ist genau ein Eintrag [wK/wB/sK/sB/--].\n' +
-    '2) FEN: technische Kopie derselben Stellung.\n' +
-    '3) STÜCKLISTE: dieselben Figuren in Alltagssprache.\n\n' +
-    'REGELN:\n' +
-    '- Erwähne nur Felder/Figuren, die in FELDER-TABELLE + STÜCKLISTE zur passenden Phase (vor/nach) vorkommen.\n' +
-    '- Spielerzug und besserer Zug sind vorgegeben; erfinde keine andere Partie oder Zugfolge.\n' +
-    '- Bewertungen sind Weiß-Sicht (höher = besser für Weiß).\n\n' +
-    '=== VOR DEINEM ZUG (Entscheidungsstellung) — am Zug: ' + sideBefore + ' ===\n' +
-    'FEN: ' + ctx.fen + '\n\n' +
-    'FELDER-TABELLE:\n' + tableBefore + '\n\n' +
-    'STÜCKLISTE:\n' + piecesBefore + '\n' +
-    'Legale Züge ' + sideBefore + ' (Stichprobe, max. ' + EXPLAIN_LEGAL_MOVES_MAX + '): ' + legalBeforeStr + '\n\n' +
-    '=== DEIN ZUG (Weiß) ===\n' +
-    'SAN: \"' + ctx.playerMove + '\"' + (ctx.playerUci ? (', UCI: \"' + ctx.playerUci + '\"') : '') + '\n\n' +
-    '=== NACH DEINEM ZUG — am Zug: ' + sideAfter + ' ===\n' +
-    'FEN: ' + ctx.fenAfter + '\n\n' +
-    'FELDER-TABELLE:\n' + tableAfter + '\n\n' +
-    'STÜCKLISTE:\n' + piecesAfter + '\n' +
-    'Legale Züge ' + sideAfter + ' (Stichprobe): ' + legalAfterStr + '\n\n' +
-    '=== ENGINE-EINORDNUNG (Weiß-Sicht) ===\n' +
-    'Vor deinem Zug (Stellungswert): ' + cpStr(ctx.cpBefore) + '\n' +
-    betterBlock + '\n' +
-    (function() {
-      if (typeof EndspielgottMultiPV === 'undefined' || !ctx.stockfishVariations) return '';
-      var blk = EndspielgottMultiPV.formatMultiPVForExplain(ctx.fen, ctx.stockfishVariations);
-      return blk ? '\n\n=== STOCKFISCH MULTIPV (Wurzelstellung, Objektiv) ===\n' + blk + '\n' : '';
-    })() +
-    '\n' +
-    'TEXTAUFGABE: ' + task + '\n' +
-    'Stil: Deutsch, \"du\", sachlich, keine Floskeln.\n\n' +
-    'FORMAT (strikt): nur EIN JSON-Objekt, kein Markdown.\n' +
-    '{\"summary\":\"Ein Satz Kernthese.\",\"detail\":\"Genau zwei Sätze; jedes genannte Feld muss in der passenden FELDER-TABELLE vorkommen.\"}';
+  var multiPVBlock = '';
+  if (typeof EndspielgottMultiPV !== 'undefined' && ctx.stockfishVariations) {
+    var blk = EndspielgottMultiPV.formatMultiPVForExplain(ctx.fen, ctx.stockfishVariations);
+    if (blk) multiPVBlock = '=== STOCKFISCH MULTIPV (Wurzelstellung) ===\n' + blk;
+  }
+
+  var pvSanLine = (ctx.pvSAN && ctx.pvSAN.length)
+    ? ctx.pvSAN.slice(0, 6).join(' → ')
+    : '';
+
+  var compose = (typeof EndspielgottExplain !== 'undefined' && EndspielgottExplain.composeExplainUserContent)
+    ? EndspielgottExplain.composeExplainUserContent
+    : null;
+  if (!compose) {
+    box.className = 'explain-box visible';
+    box.textContent = 'explain-prompt.js fehlt — bitte Seite neu laden.';
+    btn.disabled = false;
+    btn.textContent = '🔄 Nochmal versuchen';
+    return;
+  }
+
+  var content = compose({
+    fen: ctx.fen,
+    fenAfter: ctx.fenAfter,
+    tableBefore: tableBefore,
+    tableAfter: tableAfter,
+    piecesBefore: piecesBefore,
+    piecesAfter: piecesAfter,
+    sideBefore: sideBefore,
+    sideAfter: sideAfter,
+    playerMove: ctx.playerMove,
+    playerUci: ctx.playerUci || '',
+    legalBeforeStr: legalBeforeStr,
+    legalAfterStr: legalAfterStr,
+    legalMax: EXPLAIN_LEGAL_MOVES_MAX,
+    cpBeforeStr: cpStr(ctx.cpBefore),
+    betterBlock: betterBlock,
+    task: task,
+    situationTitle: ctx.situationTitle || '',
+    pvSanLine: pvSanLine,
+    multiPVBlock: multiPVBlock,
+    evalNote: ctx.evalNote || ''
+  });
 
   fetch('/api/explain', {
     method: 'POST',
@@ -1808,6 +1818,7 @@ function loadExplanation() {
       var detEl = document.createElement('div');
       detEl.style.fontWeight = '700';
       detEl.style.lineHeight = '1.45';
+      detEl.style.whiteSpace = 'pre-wrap';
       detEl.textContent = parsed.detail || '';
       box.appendChild(detEl);
       btn.style.display = 'none';
@@ -1841,6 +1852,24 @@ function askClaudeForFeedback(
   try { legalBefore = new Chess(fen).moves(); } catch(e) {}
   try { legalAfter  = new Chess(fenAfter).moves(); } catch(e) {}
 
+  var situationTitle = '';
+  try {
+    var gSit = new Chess(fen);
+    if (typeof EndspielgottCatalog !== 'undefined' && EndspielgottCatalog.detectSituationFromGame) {
+      var sit0 = EndspielgottCatalog.detectSituationFromGame(gSit);
+      if (sit0 && sit0.title) situationTitle = sit0.title;
+    }
+  } catch (e) {}
+
+  var evalNoteUi = '';
+  var evalNoteModel = '';
+  if (!isBestMove && cpAfterActual != null && cpBestAfterEval != null &&
+      cpAfterActual > cpBestAfterEval + 20) {
+    evalNoteUi = 'Hinweis: Deine Stellung wird hier höher bewertet als die nach dem Engine-Zug. ' +
+      'Beide Zahlen sind Leaf-Bewertungen (nach dem jeweiligen Zug). Bei begrenzter Tiefe können solche Ausreißer trotzdem kurz auftreten.';
+    evalNoteModel = evalNoteUi;
+  }
+
   // Store full context for the explain button
   lastMoveContext = {
     fen: fen, fenAfter: fenAfter,
@@ -1851,18 +1880,12 @@ function askClaudeForFeedback(
     isBestMove: isBestMove, pvSAN: pvSAN,
     legalBefore: legalBefore, legalAfter: legalAfter,
     stockfishVariations: stockfishVariations || null,
+    situationTitle: situationTitle,
+    evalNote: evalNoteModel
   };
 
   var ratingKey = classifyMove(cpLoss, isBestMove);
-  // Wenn die Nachstellung nach dem Spielerzug höher bewertet ist als nach dem Wurzel-Bestzug,
-  // wirken die Zahlen widersprüchlich — typisch bei begrenzter Suchtiefe / Engine-Rauschen.
-  var evalNote = '';
-  if (!isBestMove && cpAfterActual != null && cpBestAfterEval != null &&
-      cpAfterActual > cpBestAfterEval + 20) {
-    evalNote = 'Hinweis: Deine Stellung wird hier höher bewertet als die nach dem Engine-Zug. ' +
-      'Beide Zahlen sind Leaf-Bewertungen (nach dem jeweiligen Zug). Bei begrenzter Tiefe können solche Ausreißer trotzdem kurz auftreten.';
-  }
-  setMoveRating(ratingKey, cpAfterActual, cpBestAfterEval, playerMove, bestMove, evalNote);
+  setMoveRating(ratingKey, cpAfterActual, cpBestAfterEval, playerMove, bestMove, evalNoteUi);
 }
 
 // ── EVAL BAR ──────────────────────────────────────────
