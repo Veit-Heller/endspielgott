@@ -39,7 +39,22 @@ h1 span{color:#6B3F1A;}
 .engbadge.loading{background:#fff3cd;color:#856404;}
 .engbadge.ready{background:#d4edda;color:#155724;}
 .engbadge.error{background:#f8d7da;color:#721c24;}
-/* .mctr removed */
+/* Spielleiste: Identität, Zugnummer, Zugbewertung (Punkt) */
+.play-pbar{margin-top:2px;}
+.play-pbar .pbar-flex{flex:1;min-width:6px;}
+.play-pbar .pbar-who{font-size:14px;font-weight:800;color:#3d3d3a;flex-shrink:0;}
+.play-pbar .pbar-pawn{font-size:17px;line-height:1;display:block;transform:translateY(1px);}
+.play-pbar .pbar-zug{font-size:11px;font-weight:900;letter-spacing:.14em;color:#888;flex-shrink:0;}
+.rating-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;display:inline-block;vertical-align:middle;
+  background:#d8d4cc;box-shadow:0 0 0 2px rgba(0,0,0,.06);transition:background .2s,box-shadow .2s;}
+.rating-dot.r-best{background:#58CC02;box-shadow:0 0 0 2px #eaf7d8;animation:ratingGlow 1.4s ease-in-out infinite;}
+.rating-dot.r-great{background:#7ed957;box-shadow:0 0 0 2px #e3f5d4;}
+.rating-dot.r-good{background:#c5e063;box-shadow:0 0 0 2px #f0f5d4;}
+.rating-dot.r-ok{background:#e8c547;box-shadow:0 0 0 2px #faf0d0;}
+.rating-dot.r-bad{background:#e59866;box-shadow:0 0 0 2px #fde8d8;}
+.rating-dot.r-blunder{background:#e74c3c;box-shadow:0 0 0 2px #fde2df;}
+.rating-dot.rating-paused{animation:none !important;opacity:.88;}
+@keyframes ratingGlow{0%,100%{box-shadow:0 0 0 2px #eaf7d8;}50%{box-shadow:0 0 0 4px #b8ec9a;}}
 .board-outer{border-radius:14px;overflow:hidden;box-shadow:0 10px 36px rgba(0,0,0,.22);border:4px solid #6B3F1A;display:inline-block;}
 .board-frame{background:linear-gradient(145deg,#9B6B3C,#7A4E24);padding:14px;position:relative;}
 .board-labels-left{position:absolute;left:0;top:14px;width:14px;display:flex;flex-direction:column;}
@@ -136,6 +151,7 @@ h1 span{color:#6B3F1A;}
 .move-card.is-empty .move-empty{display:flex;}
 .move-card.is-empty .move-actions{display:none;}
 .move-card.hidden-for-search{display:none;}
+.play-pbar.hidden-for-search{display:none;}
 .sit-panel.hidden-for-search{display:none !important;}
 .sit-panel{width:100%;border-radius:16px;overflow:hidden;border:1px solid #e8e6de;box-shadow:0 1px 4px rgba(0,0,0,.06);background:#fff;cursor:pointer;}
 .sit-icon{width:28px;height:28px;border-radius:10px;display:flex;align-items:center;justify-content:center;
@@ -221,6 +237,14 @@ input[type=range]{flex:1;accent-color:#8B5E3C;}
     </div>
   </div>
 
+  <div class="pbar play-pbar" id="play-pbar">
+    <div class="av av-o" aria-hidden="true"><span class="pbar-pawn">♙</span></div>
+    <span class="pbar-who">Du · Weiß</span>
+    <span class="pbar-flex"></span>
+    <span class="pbar-zug" id="mctr">ZUG 1</span>
+    <span class="rating-dot" id="rating-dot" title="" role="img" aria-label="Zugbewertung"></span>
+  </div>
+
   <div class="move-card is-empty" id="move-card">
     <div class="move-card-top">
       <div class="move-box" id="box-player">
@@ -264,7 +288,7 @@ input[type=range]{flex:1;accent-color:#8B5E3C;}
           </div>
         </div>
       </div>
-      <div class="move-empty" id="move-empty">Wähle einen weisen Zug</div>
+      <div class="move-empty" id="move-empty">Wähle einen weißen Zug</div>
 
     </div>
     <div id="eval-note" style="display:none;font-size:11px;font-weight:600;color:#7a6f62;line-height:1.4;margin:-4px 12px 10px;max-width:520px;"></div>
@@ -793,6 +817,8 @@ function generatePosition() {
   generating = true;
   var mc = document.getElementById('move-card');
   if (mc) mc.classList.add('hidden-for-search');
+  var pb = document.getElementById('play-pbar');
+  if (pb) pb.classList.add('hidden-for-search');
   var sp = document.getElementById('situation-panel');
   if (sp) sp.classList.add('hidden-for-search');
   var btn = document.getElementById('gen-btn');
@@ -809,6 +835,8 @@ function tryNextPosition(attempt) {
     stopBoardShuffleAnim();
     var mcFail = document.getElementById('move-card');
     if (mcFail) mcFail.classList.remove('hidden-for-search');
+    var pbFail = document.getElementById('play-pbar');
+    if (pbFail) pbFail.classList.remove('hidden-for-search');
     var spFail = document.getElementById('situation-panel');
     if (spFail) spFail.classList.remove('hidden-for-search');
     setGameStatus('Keine passende Stellung nach ' + MAX_POSITION_ATTEMPTS + ' Versuchen — Schwierigkeit lockern oder erneut klicken.', '');
@@ -928,7 +956,7 @@ function setEvalOutcome(outcome) {
 function startGame(fen, initialCp) {
   game = new Chess(fen);
   sel = null; lastMv = null; mvCnt = 1;
-  hist = [{ fen: fen }];
+  hist = [{ fen: fen, z: 1 }];
   busy = false;
   setEvalOutcome(null);
   renderBoard();
@@ -936,9 +964,12 @@ function startGame(fen, initialCp) {
   setGameStatus('', '');
   var mc = document.getElementById('move-card');
   if (mc) mc.classList.remove('hidden-for-search');
+  var pb = document.getElementById('play-pbar');
+  if (pb) pb.classList.remove('hidden-for-search');
   var sp = document.getElementById('situation-panel');
   if (sp) sp.classList.remove('hidden-for-search');
   resetRatingCard();
+  updatePlayPbarZug();
   updateSituation();
   var cpStr = (initialCp / 100).toFixed(2);
   var tips = [
@@ -1016,7 +1047,8 @@ function handleClick(sq) {
         lastMv = { from: sel, to: sq };
         sel = null;
         mvCnt++;
-        hist.push({ fen: game.fen() });
+        updatePlayPbarZug();
+        hist.push({ fen: game.fen(), z: mvCnt });
         renderBoard();
         updateSituation();
         if (!checkEnd()) afterMove(fenBefore, res);
@@ -1029,10 +1061,41 @@ function handleClick(sq) {
   if (p && p.color === 'w') { sel = sq; renderBoard(); }
 }
 
+function updatePlayPbarZug() {
+  var el = document.getElementById('mctr');
+  if (el) el.textContent = 'ZUG ' + mvCnt;
+}
+
+function setRatingDotIdle() {
+  var dot = document.getElementById('rating-dot');
+  if (!dot) return;
+  dot.className = 'rating-dot';
+  dot.title = '';
+  dot.setAttribute('aria-label', 'Zugbewertung: noch keine');
+}
+
+function applyRatingDot(ratingKey) {
+  var dot = document.getElementById('rating-dot');
+  if (!dot) return;
+  var map = {
+    best: { cls: 'r-best', title: 'Bester Zug', label: 'Bester Zug' },
+    great: { cls: 'r-great', title: 'Sehr gut', label: 'Sehr gut' },
+    good: { cls: 'r-good', title: 'Gut', label: 'Gut' },
+    ok: { cls: 'r-ok', title: 'Okay', label: 'Okay' },
+    bad: { cls: 'r-bad', title: 'Schwach', label: 'Schwach' },
+    blunder: { cls: 'r-blunder', title: 'Patzer', label: 'Patzer' },
+  };
+  var x = map[ratingKey] || { cls: '', title: '', label: '—' };
+  dot.className = 'rating-dot' + (x.cls ? ' ' + x.cls : '');
+  dot.title = x.title;
+  dot.setAttribute('aria-label', 'Zugbewertung: ' + x.label);
+}
+
 function setTurnDot(yourTurn) {
-  if (yourTurn) {
-  } else {
-  }
+  var dot = document.getElementById('rating-dot');
+  if (!dot) return;
+  if (yourTurn) dot.classList.remove('rating-paused');
+  else dot.classList.add('rating-paused');
 }
 
 // ── AFTER PLAYER MOVE ─────────────────────────────────
@@ -1076,7 +1139,7 @@ function afterMove(fenBefore, move) {
                 var res = game.move({ from: from, to: to, promotion: promo });
                 if (res) {
                   lastMv = { from: from, to: to };
-                  hist.push({ fen: game.fen() });
+                  hist.push({ fen: game.fen(), z: mvCnt });
                   evalFull(game.fen(), 8).then(function(sfPost) {
                     if (sfPost) setEval(sfPost.cp);
                     renderBoard();
@@ -1163,8 +1226,6 @@ function afterMove(fenBefore, move) {
 // Stored for the explain button
 var lastMoveContext = null;
 
-// rating icons/badges removed
-
 function classifyMove(cpLoss, isBestMove) {
   if (isBestMove)   return 'best';
   if (cpLoss <  20) return 'great';
@@ -1230,6 +1291,7 @@ function resetRatingCard() {
   document.getElementById('explain-btn').style.display = 'none';
   document.getElementById('explain-box').className = 'explain-box';
   document.getElementById('explain-box').innerHTML = '';
+  setRatingDotIdle();
 }
 
 function setMoveRating(ratingKey, cpPlayer, cpBestMove, playerMove, bestMove, evalNote) {
@@ -1275,6 +1337,7 @@ function setMoveRating(ratingKey, cpPlayer, cpBestMove, playerMove, bestMove, ev
       noteEl.textContent = '';
     }
   }
+  applyRatingDot(ratingKey);
 }
 
 function setGameStatus(msg, type) {
@@ -1590,25 +1653,20 @@ function checkEnd() {
 // ── UNDO ──────────────────────────────────────────────
 function undoLast() {
   if (!hist || hist.length <= 1) { setGameStatus('Das ist bereits die Ausgangsstellung.', ''); return; }
-  // Keep undo user-friendly for a "you are always White" flow:
-  // step back until we land on a position where White is to move.
+  // Ein Klick = ein Halbzug zurück (zuerst letzter Schwarz-Zug, dann dein Weiß-Zug usw.).
   hist.pop();
-  while (hist.length > 1) {
-    var probe = null;
-    try { probe = new Chess(hist[hist.length - 1].fen); } catch (e) {}
-    if (probe && probe.turn() === 'w') break;
-    hist.pop();
-  }
-  game = new Chess(hist[hist.length - 1].fen);
+  var tip = hist[hist.length - 1];
+  game = new Chess(tip.fen);
   sel = null; lastMv = null; busy = false;
   setEvalOutcome(null);
-  mvCnt = Math.max(1, mvCnt - 1);
+  mvCnt = tip.z != null ? tip.z : 1;
+  updatePlayPbarZug();
   renderBoard();
   setGameStatus('', '');
   resetRatingCard();
   updateSituation();
   evalPosition(game.fen(), 10).then(function(cp) { if (cp !== null) setEval(cp); });
-  setTurnDot(true);
+  try { setTurnDot(game.turn() === 'w'); } catch (e) { setTurnDot(true); }
 }
 
 
