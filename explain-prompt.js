@@ -1,13 +1,8 @@
 /**
  * Endspielgott — Tobold/Claude: System-Prompt + Nutzer-Nachricht für Zug-Erklärungen.
+ * Freier Fließtext (kein JSON, keine Pflicht-Abschnitte) — nur Brett-Treue und Engine-Zahlen respektieren.
  *
- * Warum frühere Antworten oft „generisch“ wirkten (kurz):
- * - Zu enge Längenvorgabe („nur zwei Sätze“) zwingt das Modell zu inhaltsleeren Füllsätzen.
- * - Ohne harten Feldbezug greifen LLMs reflexhaft zu Universallogik (König aktiv, Initiative …).
- * - Leaf-Bewertungen (Stellung nach genau einem Zug) werden mit Wurzelintuition verwechselt.
- * - Endspiel-Schlagworte ohne Bindung an die 64 Felder klingen überall „richtig“ und nirgends hilfreich.
- *
- * Gemeinsam genutzt von: Browser (bauern-generator-sf.html) und api/explain.js (Vercel).
+ * Browser + api/explain.js (Vercel).
  */
 (function (root, factory) {
   if (typeof module === 'object' && module.exports) {
@@ -17,19 +12,12 @@
   }
 })(typeof self !== 'undefined' ? self : this, function () {
   var EXPLAIN_SYSTEM_PROMPT = [
-    'Rolle: Du bist Endspiel-Trainer (Deutsch, „du“). Du argumentierst ausschließlich aus den mitgelieferten Daten (FELDER-TABELLE, STÜCKLISTE, FEN, vorgegebene Züge, Zahlen).',
-    'Oberste Regel: Jede Aussage über Figuren oder Felder muss in der passenden FELDER-TABELLE + STÜCKLISTE (Phase VOR bzw. NACH) nachprüfbar sein. Nichts erfinden.',
-    'Bewertungszahlen sind Engine-Messwerte in Bauerneinheiten aus Weiß-Sicht (höher = besser für Weiß). „Nach deinem Zug“ und „nach dem angegebenen Bestzug“ beziehen sich jeweils auf die Stellung nach genau diesem einen Weiß-Zug (Schwarz kann danach am Zug sein) — diese beiden Zahlen sind miteinander vergleichbar.',
-    'Wenn ein HINWEIS zu widersprüchlichen Leaf-Bewertungen mitgeliefert wird, erwähne ihn knapp und rate nicht gegen die Tabellen.',
-    'STRIKT VERBOTEN ohne konkrete Felder (z. B. e4, d5) oder konkrete Züge aus den Daten: leere Floskeln wie „König aktivieren“, „Figuren entwickeln“, „Zentrum“, „Druck aufbauen“, „Initiative“, „Stellung verbessern“.',
-    'Erlaubt sind Endspiel-Konzepte (Freibauer, Opposition, Turm hinter dem Bauern, Lucena/Philidor-Idee, Zugzwang) NUR mit sofort folgendem Feld- oder Zugbezug aus den Tabellen.',
-    'Pflicht: Im gesamten JSON (summary + detail zusammen) mindestens drei verschiedene Felder nennen, die in der jeweils passenden Tabelle wirklich vorkommen.',
-    'JSON-Ausgabe: genau ein Objekt mit keys summary und detail (beide Strings). detail muss genau drei Abschnitte enthalten, getrennt durch doppelten Zeilenumbruch \\n\\n:',
-    'Abschnitt 1 — DEIN ZUG: Was macht der gespielte Zug konkret (von Feld zu Feld)? Was bleibt auf dem Brett problematisch oder was gibt er preis?',
-    'Abschnitt 2 — ENGINE: Was macht der vorgegebene bessere Zug stattdessen (Felder nennen)? Wie unterscheiden sich die genannten Bewertungen nach den Zahlen (ein Satz)?',
-    'Abschnitt 3 — MOTIV: Ein Satz: ein passendes Endspiel-Motiv NUR wenn es aus dieser Stellung klar wird; sonst exakt schreiben: „Kein Schlagwort nötig — hier zählt der konkrete Zug.“',
-    'summary: ein Satz, Kernpunkt, mindestens ein Feldbezug.',
-    'Kein Markdown außerhalb des JSON, keine Code-Fences, kein Text vor oder nach dem JSON.',
+    'Du bist ein sehr starker Schachspieler und Endspiel-Coach. Du schreibst auf Deutsch, direkt mit „du“, in normalem Fließtext.',
+    'Nutze die mitgelieferte FELDER-TABELLE und STÜCKLISTE als Wahrheit über das Brett (vor dem Zug / nach dem Zug). Erfinde keine Figuren, keine Felder, keine Züge die dort nicht stehen.',
+    'Wenn der Spieler offensichtlich Material verliert (z.B. Turm geschlagen, hängende Figur) — sag das klar und benenne die Felder. Kein Beschönigen.',
+    'Die Engine-Zahlen sind Bauerneinheiten aus Weiß-Sicht (höher = besser für Weiß). „Nach deinem Zug“ und „nach dem empfohlenen Zug“ sind jeweils Bewertungen der Stellung direkt nach diesem einen Weiß-Zug — vergleiche die sinnvoll miteinander.',
+    'Du darfst frei analysieren: so lang oder kurz wie nötig, mit eigenem Aufbau, ohne vorgegebene Überschriften oder Summary-Feld.',
+    'Kein JSON, keine Code-Blöcke am Anfang oder Ende — nur durchgehender Text. Optional einfache Absätze mit Leerzeile.',
   ].join(' ');
 
   /**
@@ -62,13 +50,8 @@
       head += 'ENDSPIEL-KONTEXT (Erkennung aus Material): ' + o.situationTitle + '\n\n';
     }
     head +=
-      '=== WARUM DIESE AUFGABE ===\n' +
-      'Du sollst einem Menschen helfen, genau diese eine Stellung zu verstehen — nicht „Schach im Allgemeinen“ zu wiederholen.\n' +
-      'Jede Behauptung muss an FELDER-TABELLE + STÜCKLISTE überprüfbar sein.\n\n' +
-      '=== ZU DEN ZAHLEN (wichtig) ===\n' +
-      'Alle CP-Werte sind Weiß-Sicht. „Nach deinem Zug“ = Bewertung der Partiestellung direkt nach deinem Weiß-Zug. ' +
-      '„Nach Bestzug“ = Bewertung direkt nach dem angegebenen besseren Weiß-Zug. ' +
-      'Vergleiche nur diese paarweise — nicht mit „Vor deinem Zug“ verwechseln.\n\n';
+      '=== ZU DEN ZAHLEN ===\n' +
+      'Alles in Bauerneinheiten, Weiß-Sicht. „Nach deinem Zug“ / „nach empfohlenem Zug“ = Stellung jeweils direkt nach diesem Weiß-Zug (Schwarz kann danach am Zug sein).\n\n';
 
     if (o.evalNote) {
       head += '=== HINWEIS ZU BEWERTUNGEN ===\n' + o.evalNote + '\n\n';
@@ -128,11 +111,8 @@
       o.betterBlock +
       multi +
       '\n' +
-      '=== TEXTAUFGABE ===\n' +
-      o.task +
-      '\n\n' +
-      'Antwort: genau ein JSON-Objekt, keine Code-Fences, kein Text außerhalb.\n' +
-      'Schema: {"summary":"…","detail":"Abschnitt1\\n\\nAbschnitt2\\n\\nAbschnitt3"}'
+      '=== DEINE ANALYSE (frei formuliert) ===\n' +
+      o.task
     );
   }
 

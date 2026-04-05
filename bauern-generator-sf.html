@@ -1685,27 +1685,29 @@ function pvExampleFromSAN(pvSAN, maxPlies) {
   return 'Orientierung an der Engine-Hauptvariante (erste Züge): ' + slice.join(' → ') + '.';
 }
 
-function parseExplainJson(raw) {
-  var s = String(raw || '').replace(/```json|```/g, '').trim();
-  try {
-    var j = JSON.parse(s);
-    return {
-      summary: (j.summary || '').trim(),
-      detail: (j.detail || j.explanation || '').trim()
-    };
-  } catch (e) {
+/** API-Antwort: bevorzugt Fließtext; falls doch JSON, summary+detail zusammenführen. */
+function normalizeExplainResponse(raw) {
+  var s = String(raw || '').trim();
+  s = s.replace(/^```(?:json|markdown|text)?\s*/i, '').replace(/\s*```$/i, '');
+  s = s.trim();
+  if (s.charAt(0) === '{') {
+    try {
+      var j = JSON.parse(s);
+      var a = (j.summary || '').trim();
+      var b = (j.detail || j.explanation || '').trim();
+      if (a || b) return [a, b].filter(Boolean).join('\n\n').trim();
+    } catch (e) {}
     var m = s.match(/\{[\s\S]*\}/);
     if (m) {
       try {
         var j2 = JSON.parse(m[0]);
-        return {
-          summary: (j2.summary || '').trim(),
-          detail: (j2.detail || j2.explanation || '').trim()
-        };
+        var a2 = (j2.summary || '').trim();
+        var b2 = (j2.detail || j2.explanation || '').trim();
+        if (a2 || b2) return [a2, b2].filter(Boolean).join('\n\n').trim();
       } catch (e2) {}
     }
   }
-  return { summary: '', detail: s };
+  return s;
 }
 
 function loadExplanation() {
@@ -1744,9 +1746,10 @@ function loadExplanation() {
       (lossLine ? (' ' + lossLine) : ''));
 
   var task = ctx.isBestMove
-    ? ('Begründe, warum dein Zug \"' + ctx.playerMove + '\" hier zur Wurzelstellung passt — nur mit Feldern aus Tabelle/Stückliste, keine Allgemeinplätze.')
-    : ('Vergleiche deinen Zug \"' + ctx.playerMove + '\" mit dem vorgegebenen besseren Zug \"' + (ctx.bestMove || '?') +
-      '\" — was ändert sich auf dem Brett (konkrete Felder)?');
+    ? ('Spielerzug (SAN): \"' + ctx.playerMove + '\". Die Engine nennt ihn hier als besten Zug. Erklär frei, warum der Zug in dieser Stellung passt — mit Bezug zum Brett.')
+    : ('Spielerzug: \"' + ctx.playerMove + '\". Besser laut Engine: \"' + (ctx.bestMove || '?') + '\". ' +
+      'Analysiere offen und ehrlich: Gibt es einen klaren Fehler (Material verloren, Figur hängt, schlechter Turmtausch)? ' +
+      'Was macht der empfohlene Zug stattdessen? Keine Scheu vor klaren Worten wenn der Zug schlicht schlecht war.');
 
   var multiPVBlock = '';
   if (typeof EndspielgottMultiPV !== 'undefined' && ctx.stockfishVariations) {
@@ -1806,21 +1809,13 @@ function loadExplanation() {
     return r.json();
   })
     .then(function(d) {
-      var raw = (d.content && d.content[0] && d.content[0].text) || '{}';
-      var parsed = parseExplainJson(raw);
+      var raw = (d.content && d.content[0] && d.content[0].text) || '';
+      var text = normalizeExplainResponse(raw);
       box.className = 'explain-box visible';
-      box.textContent = '';
-      var sumEl = document.createElement('div');
-      sumEl.style.fontWeight = '900';
-      sumEl.style.marginBottom = '8px';
-      sumEl.textContent = parsed.summary || '—';
-      box.appendChild(sumEl);
-      var detEl = document.createElement('div');
-      detEl.style.fontWeight = '700';
-      detEl.style.lineHeight = '1.45';
-      detEl.style.whiteSpace = 'pre-wrap';
-      detEl.textContent = parsed.detail || '';
-      box.appendChild(detEl);
+      box.style.whiteSpace = 'pre-wrap';
+      box.style.fontWeight = '700';
+      box.style.lineHeight = '1.5';
+      box.textContent = text || '—';
       btn.style.display = 'none';
     })
     .catch(function(err) {

@@ -30,8 +30,8 @@ module.exports = async function handler(req, res) {
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
-        max_tokens: 900,
-        temperature: 0.12,
+        max_tokens: 1600,
+        temperature: 0.25,
         system: explainPrompt.EXPLAIN_SYSTEM_PROMPT,
         messages: [{ role: 'user', content: content }]
       })
