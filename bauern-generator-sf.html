@@ -756,17 +756,17 @@ function fenToFieldTable(fen) {
 var difficulty = 2;
 var DIFF_RANGES = { 1:[80,200], 2:[30,150], 3:[10,80] };
 /**
- * K+T+B vs K+T+B: wie Bauernendspiel per CP gefiltert, Bänder etwas breiter —
- * Turm erzeugt oft noch Remisdruck trotz Mehr-Bewertung.
+ * K+T+B vs K+T+B: Vorteil in Bauerneinheiten (Stockfish-CP), enger gefasst als zuvor.
+ * Leicht 5–7, Mittel 3–5, Schwer 2–3 (jeweils min..max in CP).
  */
-var DIFF_RANGES_ROOK_RRP = { 1:[72,218], 2:[26,158], 3:[10,76] };
+var DIFF_RANGES_ROOK_RRP = { 1:[500,700], 2:[300,500], 3:[200,300] };
 var DIFF_LABELS = { 1:'Leicht', 2:'Mittel', 3:'Schwer' };
 var DIFF_DESC   = { 1:'Klarer Vorteil — lerne die Technik', 2:'Realistisches Spiel — muss gearbeitet werden', 3:'Knapper Vorteil — kein Fehler erlaubt' };
 /** Tooltips nur für Variante T+T+Bauer */
 var DIFF_DESC_ROOK_RRP = {
-  1:'Deutlicher Pluswert — Freibauer/Turmaktivität oft klar, Gegner hat wenig Gegenwehr.',
-  2:'Typisches Turm-Bauern-Spiel — Vorteil da, aber Technik (Lucena/Philidor-Ideen) nötig.',
-  3:'Knapper Vorteil — ein Turmzug kann ins Remis kippen; genau rechnen.'
+  1:'Sehr klarer Vorteil (ca. +5 bis +7 Bauerneinheiten) — Technik üben ohne enge Remisgefahr.',
+  2:'Solider Vorteil (ca. +3 bis +5) — typisches Turm-Bauern-Spiel mit Arbeit.',
+  3:'Knapper Vorteil (ca. +2 bis +3) — Remisdruck real, genau spielen.'
 };
 /** K+T vs K: Schwierigkeit = Mattweite (SF) + Stellungsbias; Tooltips fürs Regler-Label */
 var DIFF_DESC_ROOK_KRK = {
