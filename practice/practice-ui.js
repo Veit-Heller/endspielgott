@@ -76,6 +76,12 @@
         controller.nextGame();
       });
     }
+    var fullBtn = document.getElementById('practice-full-btn');
+    if (fullBtn) {
+      fullBtn.addEventListener('click', function() {
+        controller.startFullGame();
+      });
+    }
   }
 
   global.PracticeUI = {

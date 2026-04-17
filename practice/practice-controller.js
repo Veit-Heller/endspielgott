@@ -3,6 +3,7 @@
 
   var api = {};
   var suppressStartHook = false;
+  var STANDARD_START_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 
   function getState() {
     return global.PracticeState ? global.PracticeState.state : null;
@@ -60,6 +61,7 @@
     syncSettingsFromGlobals();
     if (enabled && !global.PracticeState.state.session) {
       global.PracticeState.startSession(global.PracticeState.state.settings);
+      api.startFullGame();
     }
     api.saveNow();
     render();
@@ -188,9 +190,20 @@
   };
 
   api.nextGame = function() {
-    if (typeof global.generatePosition === 'function') {
-      global.generatePosition();
-      global.PracticeCoach.renderCoachLine('Neue Practice-Stellung wird generiert...');
+    api.startFullGame();
+  };
+
+  api.startFullGame = function() {
+    if (typeof global.startGame !== 'function') return;
+    suppressStartHook = true;
+    global.startGame(STANDARD_START_FEN, 0);
+    suppressStartHook = false;
+    if (global.PracticeState && global.PracticeState.state.enabled) {
+      global.PracticeState.beginGame(STANDARD_START_FEN);
+      global.PracticeState.setPhase(global.PracticeState.PHASE.PLAYER_TURN);
+      global.PracticeCoach.renderCoachLine('Volles Spiel gestartet: 16 gegen 16.');
+      render();
+      api.saveNow();
     }
   };
 
