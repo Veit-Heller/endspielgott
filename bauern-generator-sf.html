@@ -518,6 +518,36 @@ function drawRook(w, flip) {
     '<rect x="17" y="24" width="14" height="8" rx="2" fill="' + c.mid + '" stroke="' + c.ol + '" stroke-width="1" opacity="0.7"/>'
   , flip);
 }
+function drawBishop(w, flip) {
+  var c = PC(w);
+  return svgWrap(
+    '<path d="M11 43 Q10 39 14 38 L34 38 Q38 39 37 43Z" fill="' + c.body + '" stroke="' + c.ol + '" stroke-width="1.5" stroke-linejoin="round"/>' +
+    '<path d="M15 38 Q13 33 14 28 Q18 30 24 30 Q30 30 34 28 Q35 33 33 38Z" fill="' + c.body + '" stroke="' + c.ol + '" stroke-width="1.5"/>' +
+    '<path d="M18 28 Q16 22 19 17 Q21 14 24 13 Q27 14 29 17 Q32 22 30 28 Q27 29.5 24 29.5 Q21 29.5 18 28Z" fill="' + c.body + '" stroke="' + c.ol + '" stroke-width="1.5"/>' +
+    '<ellipse cx="24" cy="10" rx="6.3" ry="7.2" fill="' + c.body + '" stroke="' + c.ol + '" stroke-width="1.5"/>' +
+    '<path d="M20.5 8 L27.5 12" stroke="' + c.ol + '" stroke-width="1.6" stroke-linecap="round"/>' +
+    '<circle cx="21.3" cy="8.1" r="1.6" fill="' + c.eye + '"/>' +
+    '<circle cx="26.7" cy="11.9" r="1.6" fill="' + c.eye + '"/>' +
+    '<circle cx="21.7" cy="7.8" r="0.55" fill="' + c.shine + '"/>' +
+    '<circle cx="27.1" cy="11.6" r="0.55" fill="' + c.shine + '"/>' +
+    '<path d="M21 14.8 Q24 16.5 27 14.8" fill="none" stroke="' + c.eye + '" stroke-width="1.2" stroke-linecap="round"/>' +
+    '<circle cx="24" cy="3.8" r="2.1" fill="' + c.gold + '" stroke="' + c.goldD + '" stroke-width="0.9"/>'
+  , flip);
+}
+function drawKnight(w, flip) {
+  var c = PC(w);
+  return svgWrap(
+    '<path d="M11 43 Q10 39 14 38 L34 38 Q38 39 37 43Z" fill="' + c.body + '" stroke="' + c.ol + '" stroke-width="1.5" stroke-linejoin="round"/>' +
+    '<path d="M16 38 Q13 31 16 24 Q18 19 24 15 Q29 12 31.5 8.5 Q32.8 6.5 33 4.8 Q28 5.2 24.7 7.7 Q21.2 10.4 20 13.5 Q18.4 12.4 16.6 12.9 Q15.1 13.3 14.4 14.9 Q14 15.8 14 16.9 Q14 18.9 15.4 20.3 Q17 22 19.8 22.1 Q17.4 24.5 17.2 27.5 Q17.1 30.4 19.2 33.2 Q21.3 35.9 25 38Z" fill="' + c.body + '" stroke="' + c.ol + '" stroke-width="1.5" stroke-linejoin="round"/>' +
+    '<path d="M18.4 17.7 Q19.8 17.1 21.2 17.8" fill="none" stroke="' + c.eye + '" stroke-width="1.2" stroke-linecap="round"/>' +
+    '<ellipse cx="23.2" cy="11.7" rx="2.1" ry="2.5" fill="' + c.eye + '"/>' +
+    '<ellipse cx="23.2" cy="12.2" rx="1.2" ry="1.5" fill="' + (w ? '#2C1A0E' : '#ddd') + '"/>' +
+    '<circle cx="23.7" cy="11.4" r="0.45" fill="' + c.shine + '"/>' +
+    '<path d="M20.5 26.8 Q24.5 25.8 28.4 28.8" fill="none" stroke="' + c.mid + '" stroke-width="1.4" stroke-linecap="round"/>' +
+    '<path d="M20.5 31.2 Q24.2 30.6 27.6 33" fill="none" stroke="' + c.mid + '" stroke-width="1.3" stroke-linecap="round"/>' +
+    '<circle cx="32.8" cy="5.1" r="1.5" fill="' + c.gold + '" stroke="' + c.goldD + '" stroke-width="0.8"/>'
+  , flip);
+}
 var PSVG = {
   wP: function() { return drawPawn(true); },
   bP: function() { return drawPawn(false, true); },
@@ -526,7 +556,11 @@ var PSVG = {
   wQ: function() { return drawQueen(true); },
   bQ: function() { return drawQueen(false, true); },
   wR: function() { return drawRook(true); },
-  bR: function() { return drawRook(false, true); }
+  bR: function() { return drawRook(false, true); },
+  wB: function() { return drawBishop(true); },
+  bB: function() { return drawBishop(false, true); },
+  wN: function() { return drawKnight(true); },
+  bN: function() { return drawKnight(false, true); }
 };
 
 // ── STOCKFISH ─────────────────────────────────────────
