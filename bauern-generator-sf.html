@@ -57,12 +57,9 @@ h1 span{color:#6B3F1A;}
 .engbadge.loading{background:#fff3cd;color:#856404;}
 .engbadge.ready{background:#d4edda;color:#155724;}
 .engbadge.error{background:#f8d7da;color:#721c24;}
-/* Spielleiste: Identität, Zugnummer, Zugbewertung (Punkt) */
-.play-pbar{margin-top:2px;}
-.play-pbar .pbar-flex{flex:1;min-width:6px;}
-.play-pbar .pbar-who{font-size:14px;font-weight:800;color:#3d3d3a;flex-shrink:0;}
-.play-pbar .pbar-pawn{font-size:17px;line-height:1;display:block;transform:translateY(1px);}
-.play-pbar .pbar-zug{font-size:11px;font-weight:900;letter-spacing:.14em;color:#888;flex-shrink:0;}
+/* Zugnummer + Punkt; waagerechte Ausrichtung über .move-actions-left .move-zug-strip { margin-left:12px } */
+.move-zug-strip{display:inline-flex;align-items:center;gap:8px;flex-shrink:0;}
+.move-zug-num{font-size:11px;font-weight:900;letter-spacing:.14em;color:#888;flex-shrink:0;}
 .rating-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;display:inline-block;vertical-align:middle;
   background:#d8d4cc;box-shadow:0 0 0 2px rgba(0,0,0,.06);transition:background .2s,box-shadow .2s;}
 .rating-dot.r-best{background:#58CC02;box-shadow:0 0 0 2px #eaf7d8;animation:ratingGlow 1.4s ease-in-out infinite;}
@@ -160,16 +157,21 @@ h1 span{color:#6B3F1A;}
 }
 .move-box .mcp.pos{color:#3d3d3a;}
 .move-box .mcp.neg{color:#8B5E3C;}
-.move-actions{display:flex;align-items:center;gap:8px;padding:0 12px 10px;}
-.undo-row{display:inline-flex;align-items:center;justify-content:center;width:40px;height:36px;padding:0;border-radius:10px;border:2px solid #e0ddd6;background:#fff;color:#888;font-weight:900;cursor:pointer;}
+/* Zwei Spalten wie die move-boxes (1fr — 10px — 1fr); linke Zelle: Zug + Zurück */
+.move-actions{display:flex;align-items:stretch;gap:10px;padding:0 12px 10px;}
+.move-actions-left{display:flex;align-items:center;gap:10px;flex:1 1 0;min-width:0;}
+.move-actions-left .move-zug-strip{margin-left:12px;}
+.move-actions .undo-row{flex:1 1 0;min-width:0;min-height:32px;padding:6px 10px;width:auto;height:auto;border-radius:10px;border:2px solid #e0ddd6;background:#fff;color:#888;font-family:'Nunito',sans-serif;font-size:12px;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;}
+.move-actions .explain-btn{flex:1 1 0;min-width:0;min-height:32px;margin:0;padding:6px 10px;font-size:12px;line-height:1.25;}
+.undo-row{display:inline-flex;align-items:center;justify-content:center;padding:0;border-radius:10px;border:2px solid #e0ddd6;background:#fff;color:#888;font-weight:900;cursor:pointer;}
 .undo-row:active{transform:scale(.98);}
 .undo-row:disabled{opacity:.5;cursor:not-allowed;}
 .move-empty{display:none;position:absolute;inset:0;align-items:center;justify-content:center;font-size:14px;font-weight:900;color:#8a7d70;letter-spacing:.01em;text-align:center;padding:0 14px;}
 .move-card.is-empty .move-box{display:none;}
 .move-card.is-empty .move-empty{display:flex;}
-/* move-actions bleibt sichtbar — Undo muss nach resetRatingCard() weiter klickbar sein */
+/* Nur vor dem ersten Zug dieser Partie: kein Zug-Balken (nach Undo mit hist>1 wieder sichtbar) */
+.move-card.awaiting-first-move .move-actions{display:none;}
 .move-card.hidden-for-search{display:none;}
-.play-pbar.hidden-for-search{display:none;}
 .sit-panel.hidden-for-search{display:none !important;}
 .sit-panel{width:100%;border-radius:16px;overflow:hidden;border:1px solid #e8e6de;box-shadow:0 1px 4px rgba(0,0,0,.06);background:#fff;cursor:pointer;}
 .sit-icon{width:28px;height:28px;border-radius:10px;display:flex;align-items:center;justify-content:center;
@@ -203,7 +205,7 @@ h1 span{color:#6B3F1A;}
   border:1px solid #f0d9a0;}
 .sit-tip .spark{width:20px;height:20px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:#fff3cd;border:1px solid #f0d9a0;color:#9a6400;font-weight:900;}
 .sit-tip .txt{font-size:12px;font-weight:800;color:#6B3F1A;line-height:1.35;}
-.explain-btn{margin:0;flex:1;padding:8px 12px;border-radius:10px;font-family:'Nunito',sans-serif;font-weight:800;font-size:12px;border:1.5px solid #e0ddd6;background:#f9f8f4;color:#888;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;transition:all .15s;}
+.explain-btn{margin:0;padding:8px 12px;border-radius:10px;font-family:'Nunito',sans-serif;font-weight:800;font-size:12px;border:1.5px solid #e0ddd6;background:#f9f8f4;color:#888;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;transition:all .15s;}
 .explain-btn:hover{border-color:#8B5E3C;color:#8B5E3C;background:#fdf7ef;}
 .explain-btn:disabled{opacity:.5;cursor:not-allowed;}
 .explain-box{margin:0 10px 10px;padding:10px 12px;border-radius:10px;background:#f5f4ef;font-size:13px;font-weight:700;color:#3d3d3a;line-height:1.5;display:none;}
@@ -263,15 +265,7 @@ input[type=range]{flex:1;accent-color:#8B5E3C;}
     </div>
   </div>
 
-  <div class="pbar play-pbar" id="play-pbar">
-    <div class="av av-o" aria-hidden="true"><span class="pbar-pawn">♙</span></div>
-    <span class="pbar-who">Du · Weiß</span>
-    <span class="pbar-flex"></span>
-    <span class="pbar-zug" id="mctr">ZUG 1</span>
-    <span class="rating-dot" id="rating-dot" title="" role="img" aria-label="Zugbewertung"></span>
-  </div>
-
-  <div class="move-card is-empty" id="move-card">
+  <div class="move-card is-empty awaiting-first-move" id="move-card">
     <div class="move-card-top">
       <div class="move-box" id="box-player">
         <div class="mmeta">
@@ -314,12 +308,18 @@ input[type=range]{flex:1;accent-color:#8B5E3C;}
           </div>
         </div>
       </div>
-      <div class="move-empty" id="move-empty">Wähle einen weißen Zug</div>
+      <div class="move-empty" id="move-empty">Wähle einen weisen Zug</div>
 
     </div>
     <div id="eval-note" style="display:none;font-size:11px;font-weight:600;color:#7a6f62;line-height:1.4;margin:-4px 12px 10px;max-width:520px;"></div>
     <div class="move-actions">
-      <button class="undo-row" id="undo-mini" onclick="undoLast()" title="Letzten Zug zurück — du bist wieder Weiß am Zug">↩</button>
+      <div class="move-actions-left">
+        <div class="move-zug-strip" aria-hidden="false">
+          <span class="move-zug-num" id="mctr">ZUG 1</span>
+          <span class="rating-dot" id="rating-dot" title="" role="img" aria-label="Zugbewertung"></span>
+        </div>
+        <button class="undo-row" id="undo-mini" onclick="undoLast()" title="Letzten Zug zurück — du bist wieder Weiß am Zug"><span aria-hidden="true">↩</span> Zug zurück</button>
+      </div>
       <button class="explain-btn" id="explain-btn" onclick="loadExplanation()" style="display:none">
         🦉 Tobold erklärt warum
       </button>
@@ -1010,8 +1010,6 @@ function generatePosition() {
   generating = true;
   var mc = document.getElementById('move-card');
   if (mc) mc.classList.add('hidden-for-search');
-  var pb = document.getElementById('play-pbar');
-  if (pb) pb.classList.add('hidden-for-search');
   var sp = document.getElementById('situation-panel');
   if (sp) sp.classList.add('hidden-for-search');
   var btn = document.getElementById('gen-btn');
@@ -1041,8 +1039,6 @@ function tryNextPosition(attempt) {
     stopBoardShuffleAnim();
     var mcFail = document.getElementById('move-card');
     if (mcFail) mcFail.classList.remove('hidden-for-search');
-    var pbFail = document.getElementById('play-pbar');
-    if (pbFail) pbFail.classList.remove('hidden-for-search');
     var spFail = document.getElementById('situation-panel');
     if (spFail) spFail.classList.remove('hidden-for-search');
     setGameStatus('Keine passende Stellung nach ' + MAX_POSITION_ATTEMPTS + ' Versuchen — Schwierigkeit lockern oder erneut klicken.', '');
@@ -1522,8 +1518,6 @@ function startGame(fen, initialCp) {
   setGameStatus('', '');
   var mc = document.getElementById('move-card');
   if (mc) mc.classList.remove('hidden-for-search');
-  var pb = document.getElementById('play-pbar');
-  if (pb) pb.classList.remove('hidden-for-search');
   var sp = document.getElementById('situation-panel');
   if (sp) sp.classList.remove('hidden-for-search');
   resetRatingCard();
@@ -1856,7 +1850,14 @@ function setRadialEval(prefix, cp) {
 function resetRatingCard() {
   lastMoveContext = null;
   var mc = document.getElementById('move-card');
-  if (mc) mc.classList.add('is-empty');
+  if (mc) {
+    mc.classList.add('is-empty');
+    if (typeof hist !== 'undefined' && hist && hist.length <= 1) {
+      mc.classList.add('awaiting-first-move');
+    } else {
+      mc.classList.remove('awaiting-first-move');
+    }
+  }
   var mvPl = document.getElementById('mv-player');
   var mvBst = document.getElementById('mv-best');
   var cpPl = document.getElementById('cp-player');
@@ -1877,7 +1878,10 @@ function resetRatingCard() {
 
 function setMoveRating(ratingKey, cpPlayer, cpBestMove, playerMove, bestMove, evalNote) {
   var mc = document.getElementById('move-card');
-  if (mc) mc.classList.remove('is-empty');
+  if (mc) {
+    mc.classList.remove('is-empty');
+    mc.classList.remove('awaiting-first-move');
+  }
   var mvPl = document.getElementById('mv-player');
   var mvBst = document.getElementById('mv-best');
   var cpPl  = document.getElementById('cp-player');
@@ -1903,7 +1907,7 @@ function setMoveRating(ratingKey, cpPlayer, cpBestMove, playerMove, bestMove, ev
   }
   setRadialEval('best', cpBestMove);
 
-  btn.style.display = 'block';
+  btn.style.display = '';
   btn.disabled = false;
   btn.textContent = '🦉 Tobold erklärt warum';
   box.className = 'explain-box';
