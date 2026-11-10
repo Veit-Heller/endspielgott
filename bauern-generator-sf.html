@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="description" content="Spiel gegen Tobold (Stockfish): Bauern- oder Turmendspiele, Schwierigkeit wählbar. Challenge-Link: gleiche Stellung, gleiche Engine-Stärke — wie schnell schaffst du Matt?">
-<meta name="theme-color" content="#8B5E3C">
+<meta name="theme-color" content="#0c0c0e">
 <meta property="og:site_name" content="Endspielgott">
 <meta property="og:title" content="Endspielgott — Endspiel vs. Tobold">
 <meta property="og:description" content="Bauern- oder Turmendspiel trainieren. Tobold-Stärke &amp; Schwierigkeit einstellen, Challenge-Link teilen: identische Stellung für deine Freunde.">
@@ -18,19 +18,49 @@
 <script src="endgame-catalog.js"></script>
 <script src="stockfish-multipv-claude.js"></script>
 <script src="explain-prompt.js"></script>
-<script src="practice/practice-state.js"></script>
-<script src="practice/practice-engine.js"></script>
-<script src="practice/practice-coach.js"></script>
-<script src="practice/practice-storage.js"></script>
-<script src="practice/practice-router.js"></script>
-<script src="practice/practice-ui.js"></script>
-<script src="practice/practice-controller.js"></script>
 <script defer src="/_vercel/insights/script.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&display=swap');
 *{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:'Nunito',sans-serif;background:#f0f4f8;display:flex;justify-content:center;padding:20px 8px 40px;}
-#app{display:flex;flex-direction:column;align-items:center;gap:12px;width:100%;max-width:460px;}
+:root{
+  --app-bg:#0c0c0e;
+  --app-surface:#1c1c1e;
+  --app-surface2:#2c2c2e;
+  --app-border:rgba(255,255,255,.1);
+  --app-text:#f2f2f7;
+  --app-muted:rgba(242,242,247,.5);
+  --app-accent-warm:#c9a227;
+  --app-accent2:#8B5E3C;
+  --app-cta:#f5f5f7;
+  --app-cta-text:#0c0c0e;
+}
+body{font-family:'Nunito',sans-serif;background:var(--app-bg);color:var(--app-text);display:flex;justify-content:center;padding:16px 10px 36px;min-height:100vh;}
+#app{display:flex;flex-direction:column;align-items:center;gap:14px;width:100%;max-width:460px;}
+.app-shell-header{display:flex;align-items:center;justify-content:space-between;width:100%;padding:2px 4px 0;}
+.streak-pill{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;background:var(--app-surface2);border:1px solid var(--app-border);font-size:13px;font-weight:900;color:var(--app-text);}
+.streak-pill .streak-icon{font-size:15px;line-height:1;}
+.app-shell-brand{font-size:15px;font-weight:900;letter-spacing:.04em;color:var(--app-muted);text-transform:uppercase;}
+.icon-btn{width:40px;height:40px;border-radius:50%;border:1px solid var(--app-border);background:var(--app-surface2);color:var(--app-text);font-size:18px;line-height:1;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:background .15s,transform .1s;}
+.icon-btn:active{transform:scale(.96);}
+.training-hero-card{width:100%;background:var(--app-surface);border:1px solid var(--app-border);border-radius:20px;padding:18px 18px 16px;box-shadow:0 8px 32px rgba(0,0,0,.35);}
+.training-hero-day{font-size:26px;font-weight:900;color:var(--app-muted);line-height:1.1;letter-spacing:-.02em;}
+.training-hero-date{font-size:22px;font-weight:900;color:var(--app-text);margin-top:2px;}
+.training-hero-sub{font-size:12px;font-weight:700;color:var(--app-muted);margin-top:10px;line-height:1.35;}
+.training-play-btn{margin-top:14px;width:100%;padding:14px 18px;border-radius:14px;border:none;background:var(--app-cta);color:var(--app-cta-text);font-family:inherit;font-size:15px;font-weight:900;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:10px;transition:filter .15s,transform .1s;}
+.training-play-btn:active{transform:scale(.98);filter:brightness(.95);}
+.training-play-btn:disabled{opacity:.45;cursor:not-allowed;transform:none;}
+.training-play-btn .play-tri{font-size:12px;opacity:.85;}
+.play-stack{display:flex;flex-direction:column;align-items:center;gap:12px;width:100%;}
+.settings-sheet-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.52);z-index:2000;opacity:0;pointer-events:none;transition:opacity .22s ease;}
+.settings-sheet-backdrop.is-open{opacity:1;pointer-events:auto;}
+.settings-sheet{position:fixed;left:0;right:0;bottom:0;max-height:min(88vh,640px);z-index:2001;background:var(--app-surface);border:1px solid var(--app-border);border-bottom:none;border-radius:22px 22px 0 0;transform:translateY(105%);transition:transform .3s cubic-bezier(.25,.8,.25,1);display:flex;flex-direction:column;box-shadow:0 -12px 40px rgba(0,0,0,.45);}
+.settings-sheet.is-open{transform:translateY(0);}
+.settings-sheet-handle{width:36px;height:5px;border-radius:3px;background:var(--app-border);margin:10px auto 6px;flex-shrink:0;}
+.settings-sheet-head{position:relative;padding:4px 16px 12px;border-bottom:1px solid var(--app-border);flex-shrink:0;}
+.settings-sheet-title{font-size:17px;font-weight:900;text-align:center;color:var(--app-text);}
+.settings-sheet-close{position:absolute;left:8px;top:0;width:36px;height:36px;font-size:16px;}
+.settings-sheet-body{overflow-y:auto;padding:14px 16px 28px;-webkit-overflow-scrolling:touch;}
+body.settings-sheet-open{overflow:hidden;}
 h1{font-size:22px;font-weight:900;color:#3d3d3a;}
 h1 span{color:#6B3F1A;}
 .setup{width:100%;background:#fff;border:1px solid #e8e6de;border-radius:16px;padding:16px 18px;box-shadow:0 1px 4px rgba(0,0,0,.06);display:flex;flex-direction:column;gap:10px;}
@@ -89,7 +119,8 @@ h1 span{color:#6B3F1A;}
 .lm.lt{background:#efd9a0;}.lm.dk{background:#c69f5a;}
 .dot{position:absolute;width:14px;height:14px;border-radius:50%;background:rgba(0,0,0,.17);pointer-events:none;z-index:2;}
 .cring{position:absolute;width:42px;height:42px;border-radius:50%;border:3px solid rgba(0,0,0,.22);pointer-events:none;z-index:2;}
-.evalrow{width:100%;display:flex;align-items:stretch;gap:3px;height:48px;}
+.evalrow{width:100%;position:relative;overflow:hidden;border-radius:10px;}
+.evalrow-default{display:flex;align-items:stretch;gap:3px;height:48px;width:100%;}
 .evalblk{display:flex;flex-direction:column;justify-content:center;padding:0 12px;border-radius:10px;transition:flex .6s cubic-bezier(.4,0,.2,1);overflow:hidden;min-width:0;}
 .evalblk-b{background:#3a2e22;flex:50;}
 .evalblk-w{background:#e8e6de;flex:50;}
@@ -100,8 +131,7 @@ h1 span{color:#6B3F1A;}
 .evalblk-b .evalblk-score{color:#F0C040;}
 .evalblk-w .evalblk-score{color:#3d3d3a;text-align:right;}
 .evaldivider{width:3px;background:#fff;border-radius:2px;flex-shrink:0;align-self:stretch;}
-.evalrow{position:relative;overflow:hidden;border-radius:10px;}
-.evalrow.outcome-white-win,.evalrow.outcome-black-win{gap:0;}
+.evalrow.outcome-white-win .evalrow-default,.evalrow.outcome-black-win .evalrow-default{gap:0;}
 .evalrow.outcome-white-win .evalblk-b{flex:0 0 0 !important;width:0 !important;max-width:0 !important;min-width:0 !important;padding:0 !important;border:0 !important;margin:0 !important;opacity:0;transform:none;overflow:hidden;}
 .evalrow.outcome-white-win .evalblk-w{flex:100 !important;animation:evalWinnerExpand .8s cubic-bezier(.2,.8,.2,1);}
 .evalrow.outcome-black-win .evalblk-w{flex:0 0 0 !important;width:0 !important;max-width:0 !important;min-width:0 !important;padding:0 !important;border:0 !important;margin:0 !important;opacity:0;transform:none;overflow:hidden;}
@@ -169,6 +199,12 @@ h1 span{color:#6B3F1A;}
 .move-empty{display:none;position:absolute;inset:0;align-items:center;justify-content:center;font-size:14px;font-weight:900;color:#8a7d70;letter-spacing:.01em;text-align:center;padding:0 14px;}
 .move-card.is-empty .move-box{display:none;}
 .move-card.is-empty .move-empty{display:flex;}
+/* Nach Schachmatt: zwei Haupt-Buttons im Kartenraster (statt Dein Zug / Bester Zug) */
+.move-card-mate-cta{display:none;width:100%;flex:1;align-items:stretch;gap:10px;min-height:72px;}
+.move-card-mate-cta .btn{flex:1;min-width:0;padding:10px 12px;font-size:13px;}
+.move-card.show-mate-cta .move-box,
+.move-card.show-mate-cta .move-empty{display:none !important;}
+.move-card.show-mate-cta .move-card-mate-cta{display:flex;}
 /* Nur vor dem ersten Zug dieser Partie: kein Zug-Balken (nach Undo mit hist>1 wieder sichtbar) */
 .move-card.awaiting-first-move .move-actions{display:none;}
 .move-card.hidden-for-search{display:none;}
@@ -230,16 +266,69 @@ h1 span{color:#6B3F1A;}
 .ctlbl{font-size:12px;font-weight:700;color:#888;white-space:nowrap;}
 input[type=range]{flex:1;accent-color:#8B5E3C;}
 .ctval{font-size:12px;font-weight:800;color:#3d3d3a;min-width:58px;}
-.practice-panel{width:100%;background:#fff;border:1px solid #e8e6de;border-radius:14px;padding:10px 12px;box-shadow:0 1px 4px rgba(0,0,0,.06);display:flex;flex-direction:column;gap:8px;}
-.practice-head{display:flex;align-items:center;justify-content:space-between;gap:10px;}
-.practice-title{font-size:12px;font-weight:900;color:#3d3d3a;letter-spacing:.06em;text-transform:uppercase;}
-.practice-row{font-size:12px;font-weight:800;color:#5d5145;line-height:1.3;}
-.practice-actions{display:flex;gap:6px;flex-wrap:wrap;}
-.practice-actions .btn{padding:8px 10px;font-size:12px;min-width:110px;}
+.setup-row-fullgame .btn{flex:1;min-width:0;padding:10px 12px;font-size:13px;}
+
+/* Dunkle Oberflächen (einheitlich zur Shell) */
+#app .setup{background:var(--app-surface2);border-color:var(--app-border);color:var(--app-text);}
+#app .setup-lbl{color:var(--app-muted);}
+#app .pb{background:var(--app-surface);border-color:var(--app-border);color:var(--app-muted);}
+#app .pb.active{background:var(--app-accent2);color:#fff;border-color:#a0704a;}
+#app .move-card{background:var(--app-surface);border-color:var(--app-border);}
+#app .move-box{background:linear-gradient(180deg,#2a2a2d,#1f1f22);border-color:var(--app-border);}
+#app .move-box.best{background:linear-gradient(180deg,#332a22,#241e18);border-color:rgba(232,184,109,.35);}
+#app .move-box .mlbl{color:var(--app-muted);}
+#app .move-box .mmove{color:var(--app-text);}
+#app .move-box.best .mmove{color:var(--app-accent-warm);}
+#app .move-empty{color:var(--app-muted);}
+#app .undo-row,#app .explain-btn{background:var(--app-surface2);border-color:var(--app-border);color:var(--app-muted);}
+#app .explain-btn:hover{border-color:var(--app-accent-warm);color:var(--app-accent-warm);}
+#app .explain-box{background:#252528;color:var(--app-text);border:1px solid var(--app-border);}
+#app .sit-panel{background:var(--app-surface);border-color:var(--app-border);}
+#app .sit-summary{background:var(--app-surface);}
+#app .sit-summary .stitle{color:var(--app-text);}
+#app .sit-summary .sgoal{color:var(--app-text);}
+#app .sit-item{background:#252528;border-color:var(--app-border);}
+#app .sit-text{color:var(--app-text);}
+#app .evaldivider{background:var(--app-border);}
+#app .btns{background:var(--app-surface2);border-color:var(--app-border);color:var(--app-muted);}
+#app .ctlbl{color:var(--app-muted);}
+#app .ctval{color:var(--app-text);}
+#app .move-zug-num{color:var(--app-muted);}
+#app .gen-btn:disabled{background:#3a3a3c!important;box-shadow:0 4px 0 #222!important;color:var(--app-muted)!important;}
+#app .pbar{background:var(--app-surface);border-color:var(--app-border);}
+#app .badge{background:var(--app-surface2);color:var(--app-muted);}
+#app .evalblk-w{background:#353432;}
+#app .evalblk-w .evalblk-label{color:#9e9c97;}
+#app .evalblk-w .evalblk-score{color:var(--app-text);}
+#app .semi-white{stroke:#5c5a56;}
+#app .semi-divider{stroke:#8a8680;}
+#app .move-box .mcp{color:var(--app-text);}
+#app .move-box .mcp.pos{color:var(--app-text);}
+#app .sit-warn-wrap{background:linear-gradient(180deg,#2a2224,#252022);border-color:rgba(242,199,199,.35);}
+#app .sit-tip{background:linear-gradient(135deg,#2a2824,#252320);}
+#app .board-outer{box-shadow:0 12px 40px rgba(0,0,0,.5);}
 </style>
 </head>
 <body>
 <div id="app">
+
+  <header class="app-shell-header">
+    <div class="streak-pill" id="streak-pill" title="Training an Folgetagen (lokal gespeichert)">
+      <span class="streak-icon" aria-hidden="true">🏅</span>
+      <span id="streak-count">0</span>
+    </div>
+    <div class="app-shell-brand">Endspielgott</div>
+    <button type="button" class="icon-btn" id="settings-open-btn" aria-label="Einstellungen öffnen" onclick="openSettingsSheet()">⚙</button>
+  </header>
+
+  <section class="training-hero-card" aria-label="Training heute">
+    <div class="training-hero-day" id="hero-weekday">—</div>
+    <div class="training-hero-date" id="hero-date">—</div>
+    <p class="training-hero-sub">Endspiel gegen Tobold · Stellung teilen mit dem Challenge-Link</p>
+    <button type="button" class="training-play-btn" id="hero-play-btn" onclick="generatePosition()" disabled>▶ Training starten</button>
+  </section>
+
+  <div class="play-stack">
 
   <div class="board-outer" style="align-self:center;">
     <div class="board-frame">
@@ -253,20 +342,26 @@ input[type=range]{flex:1;accent-color:#8B5E3C;}
     </div>
   </div>
 
-  <div class="evalrow">
-    <div class="evalblk evalblk-b" id="evalblk-b">
-      <div class="evalblk-label">Schwarz</div>
-      <div class="evalblk-score" id="evallbl-b">—</div>
-    </div>
-    <div class="evaldivider"></div>
-    <div class="evalblk evalblk-w" id="evalblk-w">
-      <div class="evalblk-label">Weiß</div>
-      <div class="evalblk-score" id="evallbl-w">—</div>
+  <div class="evalrow" id="evalrow">
+    <div class="evalrow-default" id="evalrow-default">
+      <div class="evalblk evalblk-b" id="evalblk-b">
+        <div class="evalblk-label">Schwarz</div>
+        <div class="evalblk-score" id="evallbl-b">—</div>
+      </div>
+      <div class="evaldivider"></div>
+      <div class="evalblk evalblk-w" id="evalblk-w">
+        <div class="evalblk-label">Weiß</div>
+        <div class="evalblk-score" id="evallbl-w">—</div>
+      </div>
     </div>
   </div>
 
   <div class="move-card is-empty awaiting-first-move" id="move-card">
     <div class="move-card-top">
+      <div class="move-card-mate-cta" id="move-card-mate-cta" aria-hidden="true">
+        <button type="button" class="btn btnp" id="gen-btn-card" onclick="generatePosition()">🎲 Neue Stellung generieren</button>
+        <button type="button" class="btn btns" id="share-challenge-btn-card" onclick="copyChallengeLink()" title="Link mit Stellung + Endspiel-Art + Schwierigkeit + Tobold-Skill — beim Öffnen sind alle Regler gleich">🔗 Challenge-Link</button>
+      </div>
       <div class="move-box" id="box-player">
         <div class="mmeta">
           <div class="mline">
@@ -311,7 +406,6 @@ input[type=range]{flex:1;accent-color:#8B5E3C;}
       <div class="move-empty" id="move-empty">Wähle einen weisen Zug</div>
 
     </div>
-    <div id="eval-note" style="display:none;font-size:11px;font-weight:600;color:#7a6f62;line-height:1.4;margin:-4px 12px 10px;max-width:520px;"></div>
     <div class="move-actions">
       <div class="move-actions-left">
         <div class="move-zug-strip" aria-hidden="false">
@@ -366,68 +460,62 @@ input[type=range]{flex:1;accent-color:#8B5E3C;}
     </div>
   </div>
 
-  <div class="btnrow">
+  <div class="btnrow" id="btnrow">
     <button class="btn btnp" id="gen-btn" onclick="generatePosition()" disabled>⏳ Stockfish lädt…</button>
     <button type="button" class="btn btns" id="share-challenge-btn" onclick="copyChallengeLink()" title="Link mit Stellung + Endspiel-Art + Schwierigkeit + Tobold-Skill — beim Öffnen sind alle Regler gleich">🔗 Challenge-Link</button>
   </div>
-  <div class="practice-panel" id="practice-panel">
-    <div class="practice-head">
-      <span class="practice-title">Practice-Mode</span>
-      <label class="ctlbl"><input type="checkbox" id="practice-toggle"> Aktiv</label>
-    </div>
-    <div class="practice-row" id="practice-phase">idle</div>
-    <div class="practice-row" id="practice-game">Noch keine Practice-Partie gestartet.</div>
-    <div class="practice-row" id="practice-stats">Partien: 0 | W/D/L: 0/0/0 | Avg CpLoss: 0.00</div>
-    <div class="practice-row" id="practice-coach-line">Coach wartet auf deinen nächsten Zug.</div>
-    <div class="practice-row" id="practice-review">Top Lernmomente erscheinen nach deinen ersten Zügen.</div>
-    <div class="practice-actions">
-      <button type="button" class="btn btnp" id="practice-full-btn">♟ Volles Spiel starten</button>
-      <button type="button" class="btn btns" id="practice-share-btn">🔁 Practice-Link</button>
-      <button type="button" class="btn btns" id="practice-retry-btn">↩ Gleiche Stellung</button>
-      <button type="button" class="btn btns" id="practice-next-btn">🎲 Neues volles Spiel</button>
-      <button type="button" class="btn btns" id="practice-save-btn">💾 Session speichern</button>
-      <button type="button" class="btn btns" id="practice-clear-btn">🧹 Session reset</button>
-    </div>
-  </div>
 
-  <!-- game status panel removed (requested) -->
+  </div><!-- /.play-stack -->
 
-  <div class="setup" style="padding:12px 18px;">
-    <div class="setup-row">
-      <span class="setup-lbl">Endspiel:</span>
-      <div class="pawn-btns mode-btns">
-        <button type="button" class="pb mode-btn active" data-mode="pawns" onclick="setGameMode('pawns')">Bauern</button>
-        <button type="button" class="pb mode-btn" data-mode="rook" onclick="setGameMode('rook')">Turm</button>
+  <div class="settings-sheet-backdrop" id="settings-backdrop" onclick="closeSettingsSheet()" aria-hidden="true"></div>
+  <div class="settings-sheet" id="settings-sheet" role="dialog" aria-modal="true" aria-labelledby="settings-sheet-title" aria-hidden="true">
+    <div class="settings-sheet-handle" aria-hidden="true"></div>
+    <div class="settings-sheet-head">
+      <button type="button" class="icon-btn settings-sheet-close" onclick="closeSettingsSheet()" aria-label="Schließen">✕</button>
+      <h2 class="settings-sheet-title" id="settings-sheet-title">Einstellungen</h2>
+    </div>
+    <div class="settings-sheet-body">
+      <div class="setup" style="padding:12px 0;">
+        <div class="setup-row">
+          <span class="setup-lbl">Endspiel:</span>
+          <div class="pawn-btns mode-btns">
+            <button type="button" class="pb mode-btn active" data-mode="pawns" onclick="setGameMode('pawns')">Bauern</button>
+            <button type="button" class="pb mode-btn" data-mode="rook" onclick="setGameMode('rook')">Turm</button>
+          </div>
+        </div>
+        <div class="setup-row" id="pawn-count-row">
+          <span class="setup-lbl">Bauern pro Seite:</span>
+          <div class="pawn-btns">
+            <button type="button" class="pb" onclick="setPawns(1)">1</button>
+            <button type="button" class="pb active" onclick="setPawns(2)">2</button>
+            <button type="button" class="pb" onclick="setPawns(3)">3</button>
+            <button type="button" class="pb" onclick="setPawns(4)">4</button>
+            <button type="button" class="pb" onclick="setPawns(5)">5</button>
+          </div>
+        </div>
+        <div class="setup-row" id="rook-variant-row" style="display:none;">
+          <span class="setup-lbl">Turm-Stellung:</span>
+          <div class="pawn-btns">
+            <button type="button" class="pb rook-var-btn active" data-variant="krk" onclick="setRookVariant('krk')">K+T vs K</button>
+            <button type="button" class="pb rook-var-btn" data-variant="krrp" onclick="setRookVariant('krrp')">T+T+Bauer</button>
+          </div>
+        </div>
+        <div class="setup-row setup-row-fullgame">
+          <span class="setup-lbl">Vollpartie:</span>
+          <button type="button" class="btn btnp" id="full-game-btn" onclick="startFullGame(); closeSettingsSheet();" title="Klassische Startaufstellung — du spielst Weiß gegen Tobold">♟ Volles Spiel starten</button>
+        </div>
+      </div>
+      <div class="ctrow">
+        <span class="ctlbl">Schwierigkeit:</span>
+        <input type="range" min="1" max="3" value="2" id="diffsl" oninput="updDiff(this.value)" style="flex:1;">
+        <span class="ctval" id="diffval" style="min-width:80px;">Mittel</span>
+      </div>
+      <div class="ctrow">
+        <span class="ctlbl">Tobold Stärke:</span>
+        <input type="range" min="0" max="20" value="4" id="sksl" oninput="updSkill(this.value)">
+        <span class="ctval" id="skval">Skill 4</span>
       </div>
     </div>
-    <div class="setup-row" id="pawn-count-row">
-      <span class="setup-lbl">Bauern pro Seite:</span>
-      <div class="pawn-btns">
-        <button type="button" class="pb" onclick="setPawns(1)">1</button>
-        <button type="button" class="pb active" onclick="setPawns(2)">2</button>
-        <button type="button" class="pb" onclick="setPawns(3)">3</button>
-        <button type="button" class="pb" onclick="setPawns(4)">4</button>
-        <button type="button" class="pb" onclick="setPawns(5)">5</button>
-      </div>
-    </div>
-    <div class="setup-row" id="rook-variant-row" style="display:none;">
-      <span class="setup-lbl">Turm-Stellung:</span>
-      <div class="pawn-btns">
-        <button type="button" class="pb rook-var-btn active" data-variant="krk" onclick="setRookVariant('krk')">K+T vs K</button>
-        <button type="button" class="pb rook-var-btn" data-variant="krrp" onclick="setRookVariant('krrp')">T+T+Bauer</button>
-      </div>
-    </div>
-  </div>
-
-  <div class="ctrow">
-    <span class="ctlbl">Schwierigkeit:</span>
-    <input type="range" min="1" max="3" value="2" id="diffsl" oninput="updDiff(this.value)" style="flex:1;">
-    <span class="ctval" id="diffval" style="min-width:80px;">Mittel</span>
-  </div>
-  <div class="ctrow">
-    <span class="ctlbl">Tobold Stärke:</span>
-    <input type="range" min="0" max="20" value="4" id="sksl" oninput="updSkill(this.value)">
-    <span class="ctval" id="skval">Skill 4</span>
   </div>
 </div>
 
@@ -586,6 +674,7 @@ function initStockfish() {
         var btn = document.getElementById('gen-btn');
         btn.textContent = '🎲 Neue Stellung generieren';
         btn.disabled = false;
+        syncMateCardButtons();
         if (tryStartChallengeFromUrl()) return;
         generatePosition();
         return;
@@ -607,6 +696,7 @@ function initStockfish() {
       var btn = document.getElementById('gen-btn');
       btn.textContent = '🎲 Neue Stellung generieren';
       btn.disabled = false;
+      syncMateCardButtons();
       setGameStatus('Stockfish-Fehler — per lokalem Server öffnen (npx serve .)', 'lose');
     };
     sf.postMessage('uci');
@@ -1015,6 +1105,7 @@ function generatePosition() {
   var btn = document.getElementById('gen-btn');
   btn.disabled = true;
   btn.textContent = '⏳ Suche Stellung…';
+  syncMateCardButtons();
   var range = getActiveDiffRange();
   var modeLbl = 'Bauern';
   var rangeTxt = '';
@@ -1045,6 +1136,7 @@ function tryNextPosition(attempt) {
     var btn = document.getElementById('gen-btn');
     btn.disabled = false;
     btn.textContent = '🎲 Neue Stellung generieren';
+    syncMateCardButtons();
     generating = false;
     if (game) renderBoard();
     return;
@@ -1077,6 +1169,7 @@ function tryNextPosition(attempt) {
     var btn = document.getElementById('gen-btn');
     btn.disabled = false;
     btn.textContent = '🎲 Neue Stellung generieren';
+    syncMateCardButtons();
     generating = false;
   });
 }
@@ -1224,12 +1317,14 @@ function tryStartChallengeFromUrl() {
   var btn = document.getElementById('gen-btn');
   btn.disabled = true;
   btn.textContent = '⏳ Lade Challenge…';
+  syncMateCardButtons();
 
   evalPosition(fen, GENERATOR_STOCKFISH_DEPTH).then(function(cp) {
     stopBoardShuffleAnim();
     startGame(fen, cp != null ? cp : 0);
     btn.disabled = false;
     btn.textContent = '🎲 Neue Stellung generieren';
+    syncMateCardButtons();
     generating = false;
   });
   return true;
@@ -1255,12 +1350,17 @@ function copyChallengeLink() {
   var url = base + '?' + p.toString();
 
   function feedback() {
-    var b = document.getElementById('share-challenge-btn');
-    if (b) {
-      var t = b.textContent;
-      b.textContent = '✓ Kopiert';
-      setTimeout(function() { b.textContent = t; }, 2200);
-    }
+    ['share-challenge-btn', 'share-challenge-btn-card'].forEach(function(id) {
+      var b = document.getElementById(id);
+      if (b) {
+        var t = b.textContent;
+        b.textContent = '✓ Kopiert';
+        setTimeout(function() {
+          var b2 = document.getElementById(id);
+          if (b2) b2.textContent = t;
+        }, 2200);
+      }
+    });
   }
 
   if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -1496,14 +1596,45 @@ function abortIfStaleMoveGen(gen) {
   return true;
 }
 
+/** Kopiert Text/Disabled von gen + Challenge in die Matt-Buttons in der Move-Card */
+function syncMateCardButtons() {
+  var g = document.getElementById('gen-btn');
+  var gc = document.getElementById('gen-btn-card');
+  if (g && gc) {
+    gc.disabled = g.disabled;
+    gc.textContent = g.textContent;
+  }
+  var hero = document.getElementById('hero-play-btn');
+  if (g && hero) hero.disabled = g.disabled;
+  var s = document.getElementById('share-challenge-btn');
+  var sc = document.getElementById('share-challenge-btn-card');
+  if (s && sc) {
+    sc.disabled = !!s.disabled;
+    sc.textContent = s.textContent;
+    sc.title = s.title || '';
+  }
+}
+
 function setEvalOutcome(outcome) {
   evalOutcome = outcome;
   var row = document.querySelector('.evalrow');
-  if (!row) return;
-  row.classList.remove('outcome-white-win', 'outcome-black-win', 'outcome-draw');
-  if (outcome === 'white-win') row.classList.add('outcome-white-win');
-  if (outcome === 'black-win') row.classList.add('outcome-black-win');
-  if (outcome === 'draw') row.classList.add('outcome-draw');
+  if (row) {
+    row.classList.remove('outcome-white-win', 'outcome-black-win', 'outcome-draw');
+    if (outcome === 'white-win') row.classList.add('outcome-white-win');
+    if (outcome === 'black-win') row.classList.add('outcome-black-win');
+    if (outcome === 'draw') row.classList.add('outcome-draw');
+  }
+  var mateUi = outcome === 'white-win' || outcome === 'black-win';
+  var mc = document.getElementById('move-card');
+  if (mc) {
+    if (mateUi) mc.classList.add('show-mate-cta');
+    else mc.classList.remove('show-mate-cta');
+  }
+  var mateCta = document.getElementById('move-card-mate-cta');
+  if (mateCta) mateCta.setAttribute('aria-hidden', mateUi ? 'false' : 'true');
+  var br = document.getElementById('btnrow');
+  if (br) br.style.display = mateUi ? 'none' : '';
+  syncMateCardButtons();
 }
 
 function startGame(fen, initialCp) {
@@ -1525,9 +1656,40 @@ function startGame(fen, initialCp) {
   updateSituation();
   setGameStatus('', '');
   setTurnDot(true);
-  if (typeof PracticeController !== 'undefined' && PracticeController.onStartGame) {
-    PracticeController.onStartGame(fen);
+  touchStreak();
+}
+
+/** Standard-Schach, Weiß am Zug — gleiche Engine-Logik wie Endspiel-Training */
+var STANDARD_START_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
+
+function startFullGame() {
+  if (!sfReady || generating) return;
+  generating = true;
+  bumpPlayGen();
+  var fen = STANDARD_START_FEN;
+  var btn = document.getElementById('gen-btn');
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = '⏳ Vollpartie lädt…';
   }
+  syncMateCardButtons();
+  evalPosition(fen, GENERATOR_STOCKFISH_DEPTH).then(function(cp) {
+    stopBoardShuffleAnim();
+    startGame(fen, cp != null ? cp : 0);
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = '🎲 Neue Stellung generieren';
+    }
+    syncMateCardButtons();
+    generating = false;
+  }).catch(function() {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = '🎲 Neue Stellung generieren';
+    }
+    syncMateCardButtons();
+    generating = false;
+  });
 }
 
 // ── BOARD RENDER ──────────────────────────────────────
@@ -1595,9 +1757,6 @@ function handleClick(sq) {
         mvCnt++;
         updatePlayPbarZug();
         hist.push({ fen: game.fen(), z: mvCnt });
-        if (typeof PracticeController !== 'undefined' && PracticeController.onPlayerMove) {
-          PracticeController.onPlayerMove(res, fenBefore, game.fen());
-        }
         renderBoard();
         updateSituation();
         if (!checkEnd()) afterMove(fenBefore, res);
@@ -1652,18 +1811,14 @@ function afterMove(fenBefore, move) {
   busy = true;
   var myGen = playGen;
   setTurnDot(false);
-  if (typeof PracticeController !== 'undefined' && PracticeController.onEngineTurnStart) {
-    PracticeController.onEngineTurnStart();
-  }
-
   // Option 2: Bewertungen immer als Leaf-Eval NACH dem jeweiligen Zug
   // - Bestzug (SAN/UCI, PV) kommt aus evalFull(fenBefore)
   // - CP-Werte kommen aus evalPosition(fenAfterPlayer) und evalPosition(fenAfterBest)
   var MOVE_ANALYSIS_DEPTH = 16;
   var fenAfterPlayer = game.fen();
-  var evalFullFn = (typeof PracticeEngine !== 'undefined' && PracticeEngine.runEvalFull) ? PracticeEngine.runEvalFull : evalFull;
-  var evalPosFn = (typeof PracticeEngine !== 'undefined' && PracticeEngine.runEvalPosition) ? PracticeEngine.runEvalPosition : evalPosition;
-  var engineMoveFn = (typeof PracticeEngine !== 'undefined' && PracticeEngine.runEngineMove) ? PracticeEngine.runEngineMove : sfSearch;
+  var evalFullFn = evalFull;
+  var evalPosFn = evalPosition;
+  var engineMoveFn = sfSearch;
 
   Promise.all([
     evalFullFn(fenBefore, MOVE_ANALYSIS_DEPTH),       // best move + pv (root)
@@ -1706,9 +1861,6 @@ function afterMove(fenBefore, move) {
                 if (res) {
                   lastMv = { from: from, to: to };
                   hist.push({ fen: game.fen(), z: mvCnt });
-                  if (typeof PracticeController !== 'undefined' && PracticeController.onEngineMove) {
-                    PracticeController.onEngineMove(res);
-                  }
                   evalFullFn(game.fen(), 8).then(function(sfPost) {
                     if (abortIfStaleMoveGen(myGen)) return;
                     if (sfPost) setEval(sfPost.cp);
@@ -1778,14 +1930,33 @@ function afterMove(fenBefore, move) {
           evalPosFn(fenAfterBest, MOVE_ANALYSIS_DEPTH).then(function(cpBestAfterEval) {
             if (abortIfStaleMoveGen(myGen)) return;
             if (cpBestAfterEval === null || cpBestAfterEval === undefined) cpBestAfterEval = cpAfterActual;
-            var cpLoss = Math.max(0, cpBestAfterEval - cpAfterActual);
-            askClaudeForFeedback(
-              fenBefore, fenAfterPlayer, move.san, move.from + move.to + (move.promotion || ''), bestSAN, bestUci,
-              cpBeforeEval, cpAfterActual, cpBestAfterEval,
-              cpAfterActual - cpBestAfterEval, cpLoss,
-              isBestMove, pvSAN, sfBest ? sfBest.variations : null
+            function finishLeafCompare(cpBestFinal) {
+              if (cpBestFinal === null || cpBestFinal === undefined) cpBestFinal = cpAfterActual;
+              var cpLoss = Math.max(0, cpBestFinal - cpAfterActual);
+              askClaudeForFeedback(
+                fenBefore, fenAfterPlayer, move.san, move.from + move.to + (move.promotion || ''), bestSAN, bestUci,
+                cpBeforeEval, cpAfterActual, cpBestFinal,
+                cpAfterActual - cpBestFinal, cpLoss,
+                isBestMove, pvSAN, sfBest ? sfBest.variations : null
+              );
+              scheduleTobold();
+            }
+            // Gleiche Suchtiefe auf zwei Blättern kann Matt vs. CP „invertieren“. Einmal nachschärfen.
+            var leafLooksWrong = !isBestMove && (
+              (cpAfterActual > cpBestAfterEval + 20) ||
+              (cpAfterActual >= EVAL_MATE_BASE && cpBestAfterEval < EVAL_MATE_BASE)
             );
-            scheduleTobold();
+            if (leafLooksWrong) {
+              var deepD = Math.min(40, Math.max(MOVE_ANALYSIS_DEPTH + 14, 28));
+              evalPosFn(fenAfterBest, deepD).then(function(cpDeep) {
+                if (abortIfStaleMoveGen(myGen)) return;
+                var merged = cpBestAfterEval;
+                if (cpDeep != null && cpDeep !== undefined && cpDeep > merged) merged = cpDeep;
+                finishLeafCompare(merged);
+              });
+            } else {
+              finishLeafCompare(cpBestAfterEval);
+            }
           });
         }
       }
@@ -1868,15 +2039,13 @@ function resetRatingCard() {
   if (cpBst) { cpBst.textContent = '—'; cpBst.className = 'mcp'; }
   setRadialEval('player', 0);
   setRadialEval('best', 0);
-  var en = document.getElementById('eval-note');
-  if (en) { en.style.display = 'none'; en.textContent = ''; }
   document.getElementById('explain-btn').style.display = 'none';
   document.getElementById('explain-box').className = 'explain-box';
   document.getElementById('explain-box').innerHTML = '';
   setRatingDotIdle();
 }
 
-function setMoveRating(ratingKey, cpPlayer, cpBestMove, playerMove, bestMove, evalNote) {
+function setMoveRating(ratingKey, cpPlayer, cpBestMove, playerMove, bestMove) {
   var mc = document.getElementById('move-card');
   if (mc) {
     mc.classList.remove('is-empty');
@@ -1888,7 +2057,6 @@ function setMoveRating(ratingKey, cpPlayer, cpBestMove, playerMove, bestMove, ev
   var cpBst = document.getElementById('cp-best');
   var btn   = document.getElementById('explain-btn');
   var box   = document.getElementById('explain-box');
-  var noteEl = document.getElementById('eval-note');
 
   // Player box
   if (mvPl) mvPl.textContent = playerMove || '—';
@@ -1913,15 +2081,6 @@ function setMoveRating(ratingKey, cpPlayer, cpBestMove, playerMove, bestMove, ev
   box.className = 'explain-box';
   box.innerHTML = '';
 
-  if (noteEl) {
-    if (evalNote) {
-      noteEl.style.display = 'block';
-      noteEl.textContent = evalNote;
-    } else {
-      noteEl.style.display = 'none';
-      noteEl.textContent = '';
-    }
-  }
   applyRatingDot(ratingKey);
 }
 
@@ -2066,7 +2225,6 @@ function loadExplanation() {
     situationTitle: ctx.situationTitle || '',
     pvSanLine: pvSanLine,
     multiPVBlock: multiPVBlock,
-    evalNote: ctx.evalNote || ''
   });
 
   fetch('/api/explain', {
@@ -2143,15 +2301,6 @@ function askClaudeForFeedback(
     }
   } catch (e) {}
 
-  var evalNoteUi = '';
-  var evalNoteModel = '';
-  if (!isBestMove && cpAfterActual != null && cpBestAfterEval != null &&
-      cpAfterActual > cpBestAfterEval + 20) {
-    evalNoteUi = 'Hinweis: Deine Stellung wird hier höher bewertet als die nach dem Engine-Zug. ' +
-      'Beide Zahlen sind Leaf-Bewertungen (nach dem jeweiligen Zug). Bei begrenzter Tiefe können solche Ausreißer trotzdem kurz auftreten.';
-    evalNoteModel = evalNoteUi;
-  }
-
   // Store full context for the explain button
   lastMoveContext = {
     fen: fen, fenAfter: fenAfter,
@@ -2162,24 +2311,11 @@ function askClaudeForFeedback(
     isBestMove: isBestMove, pvSAN: pvSAN,
     legalBefore: legalBefore, legalAfter: legalAfter,
     stockfishVariations: stockfishVariations || null,
-    situationTitle: situationTitle,
-    evalNote: evalNoteModel
+    situationTitle: situationTitle
   };
 
   var ratingKey = classifyMove(cpLoss, isBestMove);
-  setMoveRating(ratingKey, cpAfterActual, cpBestAfterEval, playerMove, bestMove, evalNoteUi);
-  if (typeof PracticeController !== 'undefined' && PracticeController.onMoveReview) {
-    PracticeController.onMoveReview({
-      ply: mvCnt,
-      playerMove: playerMove,
-      playerUci: playerUci,
-      bestUci: bestUci,
-      cpBeforeEval: cpBeforeEval,
-      cpAfterActual: cpAfterActual,
-      cpLoss: cpLoss,
-      isBestMove: isBestMove
-    });
-  }
+  setMoveRating(ratingKey, cpAfterActual, cpBestAfterEval, playerMove, bestMove);
 }
 
 // ── EVAL BAR ──────────────────────────────────────────
@@ -2262,18 +2398,12 @@ function checkEnd() {
     setEvalOutcome(ww ? 'white-win' : 'black-win');
     setEval(ww ? 9101 : -9101);
     setGameStatus(ww ? '🎉 Schachmatt! Gewonnen!' : '❌ Niederlage — neue Stellung!', ww ? 'win' : 'lose');
-    if (typeof PracticeController !== 'undefined' && PracticeController.onGameEnd) {
-      PracticeController.onGameEnd(ww ? 'win' : 'loss');
-    }
     return true;
   }
   if (game.in_stalemate() || game.in_draw()) {
     setEvalOutcome('draw');
     setEval(0);
     setGameStatus('½ Remis — Patt oder Dauerschach!', 'draw');
-    if (typeof PracticeController !== 'undefined' && PracticeController.onGameEnd) {
-      PracticeController.onGameEnd('draw');
-    }
     return true;
   }
   var pos = game.fen().split(' ')[0];
@@ -2312,9 +2442,6 @@ function undoLast() {
   updateSituation();
   evalPosition(game.fen(), 10).then(function(cp) { if (cp !== null) setEval(cp); });
   try { setTurnDot(game.turn() === 'w'); } catch (e) { setTurnDot(true); }
-  if (typeof PracticeController !== 'undefined' && PracticeController.onUndo) {
-    PracticeController.onUndo();
-  }
 }
 
 
@@ -2397,11 +2524,98 @@ function toggleWarnings(){
   if(war) war.textContent=warnOpen?'▲':'▼';
 }
 
-// ── INIT ──────────────────────────────────────────────
-syncChallengeSettingsFromUrl();
-if (typeof PracticeController !== 'undefined' && PracticeController.init) {
-  PracticeController.init();
+// ── App-Shell: Streak, Hero-Datum, Einstellungen-Sheet ──
+var STREAK_LS_KEY = 'endspielgott.trainStreak.v1';
+function ymdLocal(d) {
+  var y = d.getFullYear();
+  var m = d.getMonth() + 1;
+  var day = d.getDate();
+  return y + '-' + (m < 10 ? '0' : '') + m + '-' + (day < 10 ? '0' : '') + day;
 }
+function touchStreak() {
+  try {
+    var today = ymdLocal(new Date());
+    var raw = localStorage.getItem(STREAK_LS_KEY);
+    var o = raw ? JSON.parse(raw) : { streak: 0, last: '' };
+    if (o.last === today) { updateStreakUI(); return; }
+    var streak = o.streak || 0;
+    var last = o.last || '';
+    if (!last) {
+      streak = 1;
+    } else {
+      var lastTs = new Date(last + 'T12:00:00').getTime();
+      var todayTs = new Date(today + 'T12:00:00').getTime();
+      var diff = Math.round((todayTs - lastTs) / 864e5);
+      if (diff === 1) streak = streak + 1;
+      else if (diff === 0) { updateStreakUI(); return; }
+      else streak = 1;
+    }
+    localStorage.setItem(STREAK_LS_KEY, JSON.stringify({ streak: streak, last: today }));
+    updateStreakUI();
+  } catch (err) {}
+}
+function updateStreakUI() {
+  var el = document.getElementById('streak-count');
+  if (!el) return;
+  try {
+    var raw = localStorage.getItem(STREAK_LS_KEY);
+    var o = raw ? JSON.parse(raw) : { streak: 0, last: '' };
+    var today = ymdLocal(new Date());
+    var show = 0;
+    if (o.last) {
+      var lastTs = new Date(o.last + 'T12:00:00').getTime();
+      var todayTs = new Date(today + 'T12:00:00').getTime();
+      var diff = Math.round((todayTs - lastTs) / 864e5);
+      if (diff === 0 || diff === 1) show = o.streak || 0;
+    }
+    el.textContent = String(show);
+  } catch (err2) {
+    el.textContent = '0';
+  }
+}
+function refreshHeroDate() {
+  var d = new Date();
+  var wd = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'][d.getDay()];
+  var months = ['Jan.', 'Feb.', 'März', 'Apr.', 'Mai', 'Juni', 'Juli', 'Aug.', 'Sept.', 'Okt.', 'Nov.', 'Dez.'];
+  var elW = document.getElementById('hero-weekday');
+  var elD = document.getElementById('hero-date');
+  if (elW) elW.textContent = wd;
+  if (elD) elD.textContent = d.getDate() + '. ' + months[d.getMonth()] + ' ' + d.getFullYear();
+}
+function openSettingsSheet() {
+  var bd = document.getElementById('settings-backdrop');
+  var sh = document.getElementById('settings-sheet');
+  if (bd) {
+    bd.classList.add('is-open');
+    bd.setAttribute('aria-hidden', 'false');
+  }
+  if (sh) {
+    sh.classList.add('is-open');
+    sh.setAttribute('aria-hidden', 'false');
+  }
+  document.body.classList.add('settings-sheet-open');
+}
+function closeSettingsSheet() {
+  var bd = document.getElementById('settings-backdrop');
+  var sh = document.getElementById('settings-sheet');
+  if (bd) {
+    bd.classList.remove('is-open');
+    bd.setAttribute('aria-hidden', 'true');
+  }
+  if (sh) {
+    sh.classList.remove('is-open');
+    sh.setAttribute('aria-hidden', 'true');
+  }
+  document.body.classList.remove('settings-sheet-open');
+}
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') closeSettingsSheet();
+});
+
+// ── INIT ──────────────────────────────────────────────
+refreshHeroDate();
+updateStreakUI();
+syncChallengeSettingsFromUrl();
 initStockfish();
 </script>
 </body>

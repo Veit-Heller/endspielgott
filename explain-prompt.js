@@ -41,7 +41,6 @@
    * @param {string} [o.situationTitle]
    * @param {string} [o.pvSanLine]
    * @param {string} [o.multiPVBlock]
-   * @param {string} [o.evalNote]
    */
   function composeExplainUserContent(o) {
     o = o || {};
@@ -52,10 +51,6 @@
     head +=
       '=== ZU DEN ZAHLEN ===\n' +
       'Alles in Bauerneinheiten, Weiß-Sicht. „Nach deinem Zug“ / „nach empfohlenem Zug“ = Stellung jeweils direkt nach diesem Weiß-Zug (Schwarz kann danach am Zug sein).\n\n';
-
-    if (o.evalNote) {
-      head += '=== HINWEIS ZU BEWERTUNGEN ===\n' + o.evalNote + '\n\n';
-    }
 
     var pvPart = '';
     if (o.pvSanLine) {
