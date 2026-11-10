@@ -29,9 +29,10 @@ module.exports = async function handler(req, res) {
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1000,
-        temperature: 0.25,
+        // Fable denkt immer mit (Thinking zaehlt gegen max_tokens) und
+        // lehnt temperature/top_p/top_k mit 400 ab.
+        model: 'claude-fable-5-2',
+        max_tokens: 16000,
         system: explainPrompt.EXPLAIN_SYSTEM_PROMPT,
         messages: [{ role: 'user', content: content }]
       })
